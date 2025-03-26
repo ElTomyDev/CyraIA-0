@@ -252,3 +252,28 @@ class Environment:
             enriched_states.append(enriched_state)
         return enriched_states
     
+    def get_closest_food(self, pos):
+        """Encuentra la comida más cercana a la posición dada y retorna (food, distancia)."""
+        closest_food = min(self.food, key=lambda food: pos.distance_to(food.pos))
+        return closest_food, pos.distance_to(closest_food.pos)
+    
+    def calc_distance(self, point1, point2):
+        """
+        Calcula la distancia euclidiana entre dos puntos.
+
+        Args:
+            point1 (tuple or list): Coordenadas (x, y) del primer punto.
+            point2 (tuple or list): Coordenadas (x, y) del segundo punto.
+
+        Returns:
+            float: La distancia entre ambos puntos.
+        """
+        dx = point2[0] - point1[0]
+        dy = point2[1] - point1[1]
+        return math.sqrt(dx**2 + dy**2)
+
+    def angle_between(self, v1, v2):
+        """Calcula el ángulo en radianes entre los vectores v1 y v2."""
+        if v1.length() == 0 or v2.length() == 0:
+            return 0.0
+        return v1.angle_to(v2)
