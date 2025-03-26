@@ -13,4 +13,5 @@
  Para instalar el CyraAI, ejecuta:
 
  ```bash
-      Python -m pip install --user virtualenv
+        * Python -m pip install --user virtualenv
+        * Python -m pip install --user virtualenv
