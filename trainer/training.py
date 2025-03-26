@@ -4,10 +4,10 @@ from cyra_ai.env.environment import Environment
 from cyra_ai.agent.agent import Agent
 from config.trainer_config import *
 from config.general_config import BEST_MODEL_PATH, FPS
-from trainer.trainer_main import TrainerView
+
 
 class Train:
-    def __init__(self, view : TrainerView):
+    def __init__(self, view):
         
         # Obtiene la vista
         self.view = view
