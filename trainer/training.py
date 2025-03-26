@@ -4,16 +4,15 @@ from cyra_ai.env.environment import Environment
 from cyra_ai.agent.agent import Agent
 from config.trainer_config import *
 from config.general_config import BEST_MODEL_PATH, FPS
-from run import Run
+from trainer.trainer_main import TrainerView
 
 class Train:
-    def __init__(self, view : Run):
+    def __init__(self, view : TrainerView):
         
         # Obtiene la vista
         self.view = view
         
-        # Variables para almacenar recompensas y generaciones
-        self.generation = 0
+        # Variables para almacenar recompensas
         self.best_reward = -float('inf') # Mejor recompensa
         self.best_agent_index = None
         
