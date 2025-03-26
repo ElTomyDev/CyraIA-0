@@ -1,6 +1,6 @@
 import pygame
 from config.general_config import WINDOWS_WIDTH, WINDOWS_HEIGHT, FPS
-from training import Train
+from .training import Train
 
 class TrainerView:
     def __init__(self):

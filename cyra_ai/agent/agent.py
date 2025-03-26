@@ -3,11 +3,11 @@ import random
 import math
 import torch.optim as optim
 from torch.optim import lr_scheduler
-from models.actor import Actor
-from models.critic import Critic
+from cyra_ai.models.actor import Actor
+from cyra_ai.models.critic import Critic
 
 class Agent:
-    def __init__(self, input_size=0, output_size=0, gamma=0.99):
+    def __init__(self, input_size=13, output_size=2, gamma=0.99):
         # Inicializamos el actor (política) y el crítico (valor), usando las clases Actor y Critic
         self.actor = Actor(input_size, output_size) # Actor toma el tamaño de la entrada y el número de acciones posibles
         self.critic = Critic(input_size) # Critic toma solo el tamaño de la entrada (estado)

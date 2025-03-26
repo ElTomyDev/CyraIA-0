@@ -1,7 +1,7 @@
 import math
 import pygame
-from simulation.entities.cyras import Cyra
-from simulation.entities.foods import Food
+from trainer.entities.cyras import Cyra
+from trainer.entities.foods import Food
 
 class Environment:
     def __init__(self, screen, num_cyras=5):

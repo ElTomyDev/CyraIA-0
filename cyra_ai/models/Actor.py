@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from utils.init_weights import init_weights
+from cyra_ai.utils.init_weights import init_weights
 
 class Actor(nn.Module):
     def __init__(self, input_size, output_size):
@@ -10,8 +10,8 @@ class Actor(nn.Module):
         self.fc0 = nn.Linear(input_size, 128)
         self.ln0 = nn.LayerNorm(128)
         # Capa 1: de 128 a 64
-        self.fc1 = nn.Linear(input_size, 128)
-        self.ln1 = nn.LayerNorm(128)
+        self.fc1 = nn.Linear(128, 64)
+        self.ln1 = nn.LayerNorm(64)
         
         # Capa de salida: de 64 a output_size
         self.fc2 = nn.Linear(64, output_size)
