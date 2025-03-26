@@ -13,7 +13,6 @@
     ```sh
             Python -m pip install --user virtualenv
     
-    ```python
             python -m venv venv
 
             venv\Scripts\activate
