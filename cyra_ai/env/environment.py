@@ -25,6 +25,16 @@ class Environment:
             cyra.reset(self.screen_width, self.screen_height)
         return self.get_enriched_states()
     
+    def update(self):
+        """
+        Borra y redibuja la pantalla con la comida y los cyras.
+        """
+        self.screen.fill((0, 0, 0))
+        for food in self.food:
+            food.draw(self.screen)
+        for cyra in self.cyras:
+            cyra.draw(self.screen)
+    
     #--------------------
     # FUNCIONES AUXILIARES
     #--------------------
