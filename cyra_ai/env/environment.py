@@ -2,9 +2,13 @@ import math
 import pygame
 from trainer.entities.cyras import Cyra
 from trainer.entities.foods import Food
+from enums.health_states import HealthStates
+from enums.hunger_states import HungerStates
+from enums.energy_states import EnergyStates
 
 class Environment:
     def __init__(self, screen, num_cyras=5):
+        
         self.screen = screen
         self.screen_width, self.screen_height = self.screen.get_size()
         self.num_cyras = num_cyras  # Cantidad de cyras
@@ -13,6 +17,40 @@ class Environment:
         self.cyras = [Cyra(pygame.math.Vector2(self.screen_width//2, self.screen_height//2)) for _ in range(self.num_cyras)]  # Por ahora, un cyras en el centro
         self.food = [Food(self.screen_width, self.screen_height) for _ in range(10)]
         self.all_objects = []
+        
+        self.reward = 0
+        
+       # ---------- Umbrales ----------
+        self.eat_threshold = 35.0                  # umbral para considerar que se "come" la comida
+        self.angle_threshold = math.radians(15.0)  # Umbral para considerar bonus por girar
+        self.corner_threshold = 60.0               # Umbral de esquina para otorgar penalizacion
+        self.hunger_threshold = 0.3                # Umbral de hambre para otorgar bonus
+        self.low_energy_threshold = 0.2            # Umbral de energía baja; si cae por debajo, se penaliza
+        self.low_health_threshold = 45.0           # Umbral de salud baja; si cae por debajo, se penaliza
+        self.max_repeat_position = 3               # Maximas posiciones repetidas permitidas; si aumenta, se penaliza
+        self.optimal_hunger_min = 0.6              # Nivel de hambre; si aumenta, se penaliza.
+        
+        # ---------- Parámetros de recompensa/penalización ----------
+        # Recompensas
+        self.reward_factor = 10.5             # Factor para recompensar la mejora en distancia
+        self.eat_reward = 30.5               # Recompensa extra cuando se come la comida
+        self.direction_bonus = 0.0           # Bonos por cambiar de direccion
+        self.away_bonus_factor = 0.0         # Bonus por alejarse de la pared
+        self.hunger_bonus_factor = 6.0       # Bonus adicional al comer si el hambre es alta
+        self.health_bonus_factor = 4.5       # Bonus adicional por recuperar vida
+        self.max_health_bonus = 3.5          # Bonus por tener la salud al maximo
+        self.food_found_bonus = 4.0          # Bonus por encontrar comida en el rango de vision
+        
+        # Penalizacion
+        self.corner_penalty = 0.0            # Penalizacion por estar en la esquina
+        self.border_penalty = 0.0            # Penalizacion por llegar al borde de la pantalla
+        self.hunger_penalty_factor = 4.5     # Factor de penalización si el hambre es demasiado baja
+        self.no_upgrade_dist_penalty = 3.0   # Penalizacion si no mejora la distancia a la comida
+        self.energy_penalty_factor = 1.2     # Penalización si la energía es baja
+        self.low_health_penalty = 4.0        # Penalizacion si la salud es baja
+        self.dead_penalty = 40.0             # Penalizacion si muere
+        self.no_food_in_range = 6.2          # Penlizacion si no se encuentra comida en el rango de vision
+        self.repeat_position_penalty = 0.05  # Penalizacion si repite posiciones en el mapa 
     
     def reset(self):
         """
@@ -45,104 +83,41 @@ class Environment:
         rewards = []
         self.all_objects = self.food
         
-        # ---------- Umbrales ----------
-        eat_threshold = 35.0                  # umbral para considerar que se "come" la comida
-        angle_threshold = math.radians(15.0)  # Umbral para considerar bonus por girar
-        corner_threshold = 60.0               # Umbral de esquina para otorgar penalizacion
-        hunger_threshold = 0.3                # Umbral de hambre para otorgar bonus
-        low_energy_threshold = 0.2            # Umbral de energía baja; si cae por debajo, se penaliza
-        low_health_threshold = 45.0           # Umbral de salud baja; si cae por debajo, se penaliza
-        max_repeat_position = 3               # Maximas posiciones repetidas permitidas; si aumenta, se penaliza
-        optimal_hunger_min = 0.6              # Nivel de hambre; si aumenta, se penaliza.
         
-        # ---------- Parámetros de recompensa/penalización ----------
-        # Recompensas
-        reward_factor = 10.5             # Factor para recompensar la mejora en distancia
-        eat_reward = 30.5               # Recompensa extra cuando se come la comida
-        direction_bonus = 0.0           # Bonos por cambiar de direccion
-        away_bonus_factor = 0.0         # Bonus por alejarse de la pared
-        hunger_bonus_factor = 6.0       # Bonus adicional al comer si el hambre es alta
-        health_bonus_factor = 4.5       # Bonus adicional por recuperar vida
-        max_health_bonus = 3.5          # Bonus por tener la salud al maximo
-        food_found_bonus = 4.0          # Bonus por encontrar comida en el rango de vision
-        
-        # Penalizacion
-        corner_penalty = 0.0            # Penalizacion por estar en la esquina
-        border_penalty = 0.0            # Penalizacion por llegar al borde de la pantalla
-        hunger_penalty_factor = 4.5     # Factor de penalización si el hambre es demasiado baja
-        no_upgrade_dist_penalty = 3.0   # Penalizacion si no mejora la distancia a la comida
-        energy_penalty_factor = 1.2     # Penalización si la energía es baja
-        low_health_penalty = 4.0        # Penalizacion si la salud es baja
-        dead_penalty = 40.0             # Penalizacion si muere
-        no_food_in_range = 6.2          # Penlizacion si no se encuentra comida en el rango de vision
-        repeat_position_penalty = 0.05   # Penalizacion si repite posiciones en el mapa
                 
         for i, cyra in enumerate(self.cyras):
-            reward = 0
+            self.reward = 0
             action = actions[i]
             
-            # ** Calcular distancias al borde y al alimento antes de moverse **
-            old_dist_wall = min(cyra.pos.x, self.screen_width - cyra.pos.x,
-                                cyra.pos.y, self.screen_height - cyra.pos.y)
-            
-            #closest_food, min_dist_before = self.get_closest_food(cyra.pos) # Alimento
-            
-            # ** Actualiza la salud del cyra **
-            cyra.update_health()
-            
-            # ** Mover al Cyra **
-            old_pos = cyra.pos.copy()
-            old_dir, new_dir, movement = cyra.move(int(action[0]), int(action[1]), self.screen_width, self.screen_height)
-            
-            # ** Actualizar Hambre en funcion del movimiento **
-            cyra.update_hunger(movement)
-            
-            # ** Actualiza la lista de posiciones **
-            cyra.update_prev_positions(old_dir)
-            
-            # ** Calcular distancias al borde y al alimento despues de moverse **
-            new_dist_wall = min(cyra.pos.x, self.screen_width - cyra.pos.x,
-                                cyra.pos.y, self.screen_height - cyra.pos.y)
-            
-            #min_dist_after = cyra.pos.distance_to(closest_food.pos) # Alimento
-            cyra.update_detection_objects(self.all_objects)
-            
-            # Obtiene los objetos que solo son comida y obtiene la comida mas cercana junto con su distancia
-            food_objects = [obj for obj in cyra.detected_objects if isinstance(obj, Food)]
-            if food_objects:
-                closest_food = min(cyra.detected_objects, key=lambda food: cyra.pos.distance_to(food.pos))
-                min_dist_before = old_pos.distance_to(closest_food.pos)
-                min_dist_after = cyra.pos.distance_to(closest_food.pos)
-            else:
-                closest_food = None
-                min_dist_before = min_dist_after = float("inf")
+            # ** Actualiza al cyra y obtiene toda la informacion **
+            old_dist_food, new_dist_food, old_dist_border, new_dist_border, old_pos, old_dir, new_dir, move_speed, cant_objects, cant_food, nearest_food = cyra.update_all(actions[0], actions[1], actions[2], self.all_objects)
             
             # ------------------- RECOMPENSAS ---------------------
             
             # ** Si detecta comida **
-            if closest_food:
+            if cant_food > 0:
                 # ** Recompensa por acercarse a la comida **
-                if min_dist_before > 0:
-                    reward += ((min_dist_before - min_dist_after) / min_dist_before) * reward_factor
+                if old_dist_food > new_dist_food:
+                    reward += ((old_dist_food - new_dist_food) / old_dist_food) * reward_factor
 
                 # ** Recompenza por comer **
-                if min_dist_after < eat_threshold:
+                if new_dist_food < eat_threshold:
                     bonus = hunger_bonus_factor if cyra.hunger > hunger_threshold else 0
                     reward += eat_reward + bonus
-                    closest_food.respawn()
-                    cyra.eat(closest_food.nutrition) # Reiniciar el hambre al comer
+                    nearest_food.respawn()
+                    cyra.eat(nearest_food.nutrition) # Reiniciar el hambre al comer
             
             # ** Si recupera vida se recompensa **
-            if cyra.health_state == 1:
+            if cyra.health_state == HealthStates.RECOVE:
                 reward += health_bonus_factor
         
             # ** Si se detecta comida dentro de el rango de vision recompensar por cantidad vista **
-            if len(food_objects) > 0:
-                reward += food_found_bonus * (float(len(food_objects)) / 2.0)
+            if cant_food > 0:
+                reward += food_found_bonus * (float(len(cant_food)) / 2.0)
             
             # ** Recompensa por alejarse de la pared **
-            if new_dist_wall > old_dist_wall:
-                reward += (new_dist_wall - old_dist_wall) * away_bonus_factor
+            if new_dist_border > old_dist_border:
+                reward += (new_dist_border - old_dist_border) * away_bonus_factor
             
             # ** Recompensa por cambiar de direccion **
             if old_dir is not None:
@@ -214,6 +189,34 @@ class Environment:
         states = self.get_enriched_states()
 
         return states, rewards, done
+    
+    # -------------------------------------
+    # FUNCIONES PARA RECOMPENSAS Y CASTIGOS
+    #--------------------------------------
+    def rewards_and_penalty_food(self, cyra : Cyra, nearest_food, cant_food, old_dist_food, new_dist_food):
+        """
+        Se encarga de manejar las rempensas y castigos con respecto a la comida
+        """
+        # ** Si detecta comida **
+        if cant_food > 0:
+            # ** Si se detecta comida dentro de el rango de vision recompensar por cantidad vista **
+            self.reward += self.food_found_bonus * (float(len(cant_food)) / 2.0)
+            
+            # ** Recompensa por acercarse a la comida **
+            if old_dist_food > new_dist_food:
+                self.reward += ((old_dist_food - new_dist_food) / old_dist_food) * self.reward_factor
+
+            # ** Recompenza por comer **
+            if new_dist_food < self.eat_threshold:
+                bonus = self.hunger_bonus_factor if cyra.hunger > self.hunger_threshold else 0
+                self.reward += self.eat_reward + bonus
+                nearest_food.respawn()
+                cyra.eat(nearest_food.nutrition) # Reiniciar el hambre al comer
+        else:
+            # ** Penalizacion si el cyra tiene hambre y no encuentra comida **
+            if cyra.hunger_state == HungerStates.HUNGRY:
+                self.reward -= self.no_food_in_range
+        
     
     #--------------------
     # FUNCIONES AUXILIARES

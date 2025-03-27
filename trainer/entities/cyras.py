@@ -73,6 +73,10 @@ class Cyra:
         # ** Obtiene la comida mas cercana al cyra **
         nearest_food = self.get_nearest_food()
         
+        # ** Obtiene la distancia hacia la comida mas cercana antes de moverse **
+        old_dist_food = min(self.pos.x, nearest_food.pos.x - self.pos.x,
+                              self.pos.y, nearest_food.pos.y - self.pos.y)
+        
         # ** Calcular distancias al borde y al alimento antes de moverse **
         old_dist_border = min(self.pos.x, WINDOWS_WIDTH - self.pos.x,
                               self.pos.y, WINDOWS_HEIGHT - self.pos.y)
@@ -89,17 +93,22 @@ class Cyra:
         
         # ---- FUNCIONES DESPUES DE MOVERSE ---- >
         
+        # ** Obtiene la distancia hacia la comida mas cercana antes de moverse **
+        new_dist_food = min(self.pos.x, nearest_food.pos.x - self.pos.x,
+                              self.pos.y, nearest_food.pos.y - self.pos.y)
+        
+        # ** Calcular distancias al borde y al alimento despues de moverse **
+        new_dist_border = min(self.pos.x, WINDOWS_WIDTH - self.pos.x,
+                            self.pos.y, WINDOWS_HEIGHT - self.pos.y)
+        
         # ** Actualiza el hambre en funcion del movimiento ** 
         self.update_hunger(move_speed)
         
         # ** Actualiza la lista de posiciones **
         self.update_prev_positions(old_pos)
         
-        # ** Calcular distancias al borde y al alimento despues de moverse **
-        new_dist_border = min(self.pos.x, WINDOWS_WIDTH - self.pos.x,
-                            self.pos.y, WINDOWS_HEIGHT - self.pos.y)
 
-        return old_dist_border, new_dist_border, old_pos, old_dir, new_dir, move_speed, cant_objects, cant_food, nearest_food
+        return old_dist_food, new_dist_food, old_dist_border, new_dist_border, old_pos, old_dir, new_dir, move_speed, cant_objects, cant_food, nearest_food
         
     # -----------------------
     # FUNCIONES PARA LA SALUD
