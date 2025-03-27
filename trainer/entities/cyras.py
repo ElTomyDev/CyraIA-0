@@ -1,66 +1,82 @@
 import pygame
-import math
+from enums.health_states import HealthStates
 
 class Cyra:
     def __init__(self, pos):
-        # Posicion
+        # --- Posicion
         self.pos = pygame.math.Vector2(pos)                 # Copia de la posicion inicial
         self.prev_direction = pygame.Vector2(self.pos)      # Direccion previa del movimiento
         self.prev_positions = []                            # Ultimas 6 posiciones
         
-        # Velocidad
+        # --- Velocidad
         self.max_speed = 3                                  # Velocidad maxima permitida
         self.last_speed = 0.0                               # Magnitud del ultimo movimiento
         
-        # Hambre
+        # --- Hambre
         self.hunger = 0.0                                   # Nivel de hambre inicial
         self.hunger_rate = 0.001                            # La cantidad de hambre que se acumula por paso
         self.max_hunger = 1.0                               # Maximo nivel de hambre
+        self.min_hunger_threshold = 0.75                    # Umbral minimo de hambre para perder salud
+        self.max_hunger_threshold = 0.95                    # Umbral maximo de hambre para perder salud
         
-        # Energia
+        # --- Energia
         self.energy = 1.0                                   # Energia inicial
         self.max_energy = 1.0                               # Energia maxima
         
-        # Salud
+        # --- Salud
         self.health = 100.0                                 # Nivel de salud actual
         self.max_health = 100.0                             # Maximo nivel de salud
-        self.health_state = 0                               # Comprueba si pierde o no vida
+        self.min_health_charge = 0.2                        # Candidad de aumento de salud
+        self.max_health_charge = 0.5                        # Candidad de aumento de salud
+        self.min_health_loss = 0.05                         # Cantidad minima de decremento de salud
+        self.max_health_loss = 0.1                          # Cantidad maxima de decremento de salud
+        self.health_state = HealthStates.ANY                # Estado de la salud
+        self.min_healt_recovery_hunger = 0.6                # Umbral minimo de hambre para recuperar salud
+        self.max_healt_recovery_hunger = 0.2                # Umbral maximo de hambre para recuperar salud
         
-        # Detection rangue
+        # --- Rango de deteccion
         self.detect_radio = 150.0                           # Radio de deteccion
         self.detected_objects = []                          # Lista de objetos detectados
     
+    def update_states():
+        """
+        Se encarga de actualizar todos los parametros y estados del cyra.
+        """
+        
+        
+    # -----------------------
+    # FUNCIONES PARA LA SALUD
+    # -----------------------
     def recharge_health(self, cant_recharge):
         """
         Recarga la salud, en función del valor recarga.
         """
         self.health = min(self.health + cant_recharge, self.max_health)
-        
-    def recharge_energy(self, cant_recharge):
-        """
-        Recarga la energía, en función del valor recarga.
-        """
-        self.energy = min(self.energy + cant_recharge, self.max_energy)
     
-    def reduce_health(self):
+    def reduce_health(self, reduce):
         """
-        Disminuye la cantidad de salud de pendiendo del habre que tenga.
+        Disminuye la cantidad de salud en base a una reduccion 'reduce'.
         """
-        reduce = 0.005 if self.hunger < 0.9 else 0.05
         self.health = max(self.health - reduce, 0.0)
 
     def update_health(self):
         """
-        Disminuye la salud si el hambre es muy alta
+        Disminuye la salud si el hambre sobrepasa el umbral.
         """
-        if self.hunger >= 0.7:
-            self.reduce_health()
-            self.health_state = -1
-        elif self.hunger < 0.6:
-            self.recharge_health(0.05)
-            self.health_state = 1
+        if self.hunger >= self.max_hunger_threshold:
+            self.reduce_health(self.max_health_loss)
+            self.health_state = HealthStates.LOSS
+        elif self.hunger >= self.min_hunger_threshold:
+            self.reduce_health(self.min_health_loss)
+            self.health_state = HealthStates.LOSS
+        elif self.hunger <= self.max_healt_recovery_hunger:
+            self.recharge_health(self.max_health_charge)
+            self.health_state = HealthStates.RECOVE
+        elif self.hunger <= self.min_healt_recovery_hunger:
+            self.recharge_health(self.min_health_charge)
+            self.health_state = HealthStates.RECOVE
         else:
-            self.health_state = 0
+            self.health_state = HealthStates.ANY
     
     def update_hunger(self, movement_distance=1):
         """Incrementa la sensación de hambre en cada paso."""
@@ -75,6 +91,12 @@ class Cyra:
         """
         consumption = 0.0001 * movement_distance  # Ajustá este factor según convenga
         self.energy = max(self.energy - consumption, 0.0)
+    
+    def recharge_energy(self, cant_recharge):
+        """
+        Recarga la energía, en función del valor recarga.
+        """
+        self.energy = min(self.energy + cant_recharge, self.max_energy)
     
     def update_positions(self, position):
         """
