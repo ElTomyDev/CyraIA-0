@@ -105,7 +105,7 @@ class Environment:
                                 cyra.pos.y, self.screen_height - cyra.pos.y)
             
             #min_dist_after = cyra.pos.distance_to(closest_food.pos) # Alimento
-            cyra.update_detection(self.all_objects)
+            cyra.update_detection_objects(self.all_objects)
             
             # Obtiene los objetos que solo son comida y obtiene la comida mas cercana junto con su distancia
             food_objects = [obj for obj in cyra.detected_objects if isinstance(obj, Food)]

@@ -2,10 +2,14 @@ import pygame
 from enums.health_states import HealthStates
 from enums.hunger_states import HungerStates
 from enums.energy_states import EnergyStates
+from enums.object_types import ObjectTypes
 from config.general_config import WINDOWS_WIDTH, WINDOWS_HEIGHT
 
 class Cyra:
     def __init__(self, pos):
+        # --- Configuracion de Cyra
+        self.obj_type = ObjectTypes.CYRA
+        
         # --- Posicion
         self.pos = pygame.math.Vector2(pos)                 # Copia de la posicion inicial
         self.prev_direction = pygame.Vector2(self.pos)      # Direccion previa del movimiento
@@ -49,16 +53,53 @@ class Cyra:
         self.min_health_loss_hunger = 0.7                   # Umbral minimo de hambre para perder salud
         self.max_health_loss_hunger = 0.95                  # Umbral maximo de hambre para perder salud
         
-        # --- Rango de deteccion
+        # --- Deteccion de objetos
         self.detect_radio = 150.0                           # Radio de deteccion
-        self.detected_objects = []                          # Lista de objetos detectados
+        self.detected_objects = []                          # Lista de todos los objetos detectados
+        self.food_objects = []                              # Lista de comida detectada
     
-    def update_states():
+    def update_all(self, dx, dy, speed, all_objects):
         """
         Se encarga de actualizar todos los parametros y estados del cyra.
         """
-        pass
+        # ** Actualiza las detecciones de los objetos **
+        self.update_detection_objects()
+        self.update_food_objects()
         
+        # ** Obtiene la cantidad total de objetos y las cantidades de cada objeto detectado por separado **
+        cant_objects = self.cant_detected_objects() # Cantidad total de objetos
+        cant_food = self.cant_food_objects() # Cantidad total de comida
+        
+        # ** Obtiene la comida mas cercana al cyra **
+        nearest_food = self.get_nearest_food()
+        
+        # ** Calcular distancias al borde y al alimento antes de moverse **
+        old_dist_border = min(self.pos.x, WINDOWS_WIDTH - self.pos.x,
+                              self.pos.y, WINDOWS_HEIGHT - self.pos.y)
+        
+        # ** Actualiza la salud del cyra **
+        self.update_health()
+        
+        # ** Obtiene la antigua posicion del cyra antes de moverse **
+        old_pos = self.pos.copy()
+        
+        # ---- FUNCIONES ANTES DE MOVERSE ---- <
+        
+        old_dir, new_dir, move_speed = self.move(dx, dy, speed) # Mueve al cyra 
+        
+        # ---- FUNCIONES DESPUES DE MOVERSE ---- >
+        
+        # ** Actualiza el hambre en funcion del movimiento ** 
+        self.update_hunger(move_speed)
+        
+        # ** Actualiza la lista de posiciones **
+        self.update_prev_positions(old_pos)
+        
+        # ** Calcular distancias al borde y al alimento despues de moverse **
+        new_dist_border = min(self.pos.x, WINDOWS_WIDTH - self.pos.x,
+                            self.pos.y, WINDOWS_HEIGHT - self.pos.y)
+
+        return old_dist_border, new_dist_border, old_pos, old_dir, new_dir, move_speed, cant_objects, cant_food, nearest_food
         
     # -----------------------
     # FUNCIONES PARA LA SALUD
@@ -225,14 +266,17 @@ class Cyra:
         
         return old_direction, new_direction, magnitude
     
-
-    def detect_collision(self, obj):
+    # -----------------------------
+    # FUNCIONES PARA LAS COLISIONES
+    # -----------------------------
+    # Detectar objetos
+    def detect_collision_objects(self, obj):
         """
         Detecta si un objeto colisiona con el área de detección del Cyra.
         """
         return self.pos.distance_to(obj.pos) <= self.detect_radio
 
-    def update_detection(self, all_objects):
+    def update_detection_objects(self, all_objects):
         """
         Actualiza la lista de objetos detectados dinámicamente.
         - Si un objeto entra en el área, se agrega.
@@ -240,12 +284,56 @@ class Cyra:
         """
         new_detected = []
         for obj in all_objects:
-            if self.detect_collision(obj):
+            if self.detect_collision_objects(obj):
                 new_detected.append(obj)
         
         # Actualizamos la lista
         self.detected_objects = new_detected
     
+    def update_food_objects(self):
+        """
+        Actualiza la lista de objetos que son solo comida.
+        """
+        new_food_objects = []
+        for obj in self.detected_objects:
+            if obj.obj_type == ObjectTypes.FOOD:
+                new_food_objects.append(obj)
+        
+        self.food_objects = new_food_objects
+    
+    # ----------------------------------
+    # FUNCIONES AUXILIARES E INFORMACION
+    # ----------------------------------
+    def cant_food_objects(self):
+        """
+        Devuelve la cantidad de comida que se detecto
+        """
+        return len(self.food_objects)
+    
+    def cant_detected_objects(self):
+        """
+        Devuelve la cantidad de objetos que se detecto
+        """
+        return len(self.detected_objects)
+    
+    def get_nearest_food(self):
+        """
+        Retorna el objeto comida más cercano a cyra.
+        
+        Retorna:
+            El objeto comida más cercano o None si la lista está vacía.
+        """
+        # Si la lista de comida está vacía, retorna None.
+        if not self.food_objects:
+            return None
+
+        # Calcula la comida más cercana usando la función min y la distancia entre posiciones.
+        nearest_food = min(self.food_objects, key=lambda food: self.pos.distance_to(food.pos))
+        return nearest_food
+    
+    # ---------------
+    # OTRAS FUNCIONES
+    # ---------------
     def reset(self, screen_width, screen_height):
         """ Reinicia a los cyras """
         self.pos = pygame.math.Vector2(screen_width // 2, screen_height // 2)
