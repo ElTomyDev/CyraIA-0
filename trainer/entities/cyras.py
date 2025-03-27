@@ -1,5 +1,6 @@
 import pygame
 from enums.health_states import HealthStates
+from enums.hunger_states import HungerStates
 
 class Cyra:
     def __init__(self, pos):
@@ -14,8 +15,9 @@ class Cyra:
         
         # --- Hambre
         self.hunger = 0.0                                   # Nivel de hambre inicial
-        self.hunger_rate = 0.001                            # La cantidad de hambre que se acumula por paso
+        self.hunger_increment = 0.001                       # La cantidad de hambre que se incrementa en cada paso
         self.max_hunger = 1.0                               # Maximo nivel de hambre
+        self.hunger_state = HungerStates.ANY                # Estado actual del hambre
         self.min_hunger_threshold = 0.75                    # Umbral minimo de hambre para perder salud
         self.max_hunger_threshold = 0.95                    # Umbral maximo de hambre para perder salud
         
@@ -30,7 +32,7 @@ class Cyra:
         self.max_health_charge = 0.5                        # Candidad de aumento de salud
         self.min_health_loss = 0.05                         # Cantidad minima de decremento de salud
         self.max_health_loss = 0.1                          # Cantidad maxima de decremento de salud
-        self.health_state = HealthStates.ANY                # Estado de la salud
+        self.health_state = HealthStates.ANY                # Estado actual de la salud
         self.min_healt_recovery_hunger = 0.6                # Umbral minimo de hambre para recuperar salud
         self.max_healt_recovery_hunger = 0.2                # Umbral maximo de hambre para recuperar salud
         
@@ -78,12 +80,25 @@ class Cyra:
         else:
             self.health_state = HealthStates.ANY
     
-    def update_hunger(self, movement_distance=1):
-        """Incrementa la sensación de hambre en cada paso."""
-        factor = 1.0 if self.energy > 0.3 else 1.2
-        increment = self.hunger_rate * (1 + 0.001 * movement_distance) * factor
-        self.hunger = min(self.hunger + increment, self.max_hunger)
-
+    # ------------------------
+    # FUNCIONES PARA EL HAMBRE
+    # ------------------------
+    def increment_hunger(self, movement_distance=1):
+        """
+        Incrementa el hambre, en función del movimiento.
+        """
+        self.hunger = min(self.hunger + (self.hunger_increment * movement_distance), self.max_hunger)
+    
+    def reduce_hunger(self, reduce):
+        """
+        Disminuye la cantidad de hambre en base a una reduccion 'reduce'.
+        """
+        self.hunger = max(self.hunger - reduce, 0.0)
+    
+    
+    # -------------------------
+    # FUNCIONES PARA LA ENERGIA
+    # -------------------------
     def update_energy(self, movement_distance):
         """
         Disminuye la energía en función de la distancia movida.
