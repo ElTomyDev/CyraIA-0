@@ -1,13 +1,15 @@
 import pygame
 from enums.health_states import HealthStates
 from enums.hunger_states import HungerStates
+from enums.energy_states import EnergyStates
 
 class Cyra:
     def __init__(self, pos):
         # --- Posicion
         self.pos = pygame.math.Vector2(pos)                 # Copia de la posicion inicial
         self.prev_direction = pygame.Vector2(self.pos)      # Direccion previa del movimiento
-        self.prev_positions = []                            # Ultimas 6 posiciones
+        self.prev_positions = []                            # Ultimas (max_prev_positions) posiciones
+        self.max_prev_positon = 5                           # Cantidad de posiciones a guardar en la lista (prev_positions)
         
         # --- Velocidad
         self.max_speed = 3                                  # Velocidad maxima permitida
@@ -17,13 +19,21 @@ class Cyra:
         self.hunger = 0.0                                   # Nivel de hambre inicial
         self.max_hunger = 1.0                               # Maximo nivel de hambre
         self.hunger_increment = 0.001                       # La cantidad de hambre que se incrementa en cada paso
-        self.hunger_state = HungerStates.HUNGRY             # Estado actual del hambre
+        self.hunger_state = HungerStates.GOOD               # Estado actual del hambre
         self.min_hunger_threshold = 0.7                     # Umbral minimo para considerarse hambriento
         self.max_hunger_threshold = 0.9                     # Umbral maximo para estado critico de hambre
         
         # --- Energia
         self.energy = 1.0                                   # Energia inicial
         self.max_energy = 1.0                               # Energia maxima
+        self.min_energy_loss = 0.01                         # Minima perdida de energia
+        self.max_energy_loss = 0.05                         # Maxima perdida de energia
+        self.min_energy_charge = 0.05                       # Minima carga de energia
+        self.max_energy_charge = 0.1                        # Maxima carga de energia
+        self.energy_states = EnergyStates.GOOD              # Estado actual de la energia
+        self.min_energy_threshold = 0.4                     # Umbral minimo para considerarse cansado
+        self.max_energy_threshold = 0.2                     # Umbral maximo para considerarse muy cansado
+        
         
         # --- Salud
         self.health = 100.0                                 # Nivel de salud actual
@@ -46,6 +56,7 @@ class Cyra:
         """
         Se encarga de actualizar todos los parametros y estados del cyra.
         """
+        pass
         
         
     # -----------------------
@@ -113,13 +124,13 @@ class Cyra:
     # -------------------------
     # FUNCIONES PARA LA ENERGIA
     # -------------------------
-    def update_energy(self, movement_distance):
+    def reduce_energy(self, movement_distance, decrement):
         """
         Disminuye la energía en función de la distancia movida.
         Por ejemplo, consume 0.05 unidades de energía por cada unidad de movimiento.
         """
-        consumption = 0.0001 * movement_distance  # Ajustá este factor según convenga
-        self.energy = max(self.energy - consumption, 0.0)
+        move_factor = movement_distance if movement_distance > 0 else 1.0
+        self.energy = max(self.energy - (decrement * move_factor), 0.0)
     
     def recharge_energy(self, cant_recharge):
         """
@@ -127,7 +138,27 @@ class Cyra:
         """
         self.energy = min(self.energy + cant_recharge, self.max_energy)
     
-    def update_positions(self, position):
+    def update_energy(self, movement_distance):
+        """
+        Actualiza la perdida de energia en funcion al movimiento y el hambre. Acuatilza tambien
+        el estado.
+        """
+        if self.hunger_state == HungerStates.HUNGRY or self.hunger_state == HungerStates.GOOD:
+            self.reduce_energy(movement_distance, self.min_energy_loss)
+        else:
+            self.reduce_energy(movement_distance, self.max_energy_loss)
+        
+        if self.energy <= self.max_energy_threshold:
+            self.energy_states = EnergyStates.CRITIC
+        elif self.energy <= self.min_energy_threshold:
+            self.energy_states = EnergyStates.WEARY
+        else:
+            self.energy_states = EnergyStates.GOOD
+        
+    # --------------------------
+    # FUNCIONES PARA LA POSICION
+    # --------------------------
+    def update_prev_positions(self, position):
         """
         Actualiza la lista de sus ultimas posiciones
         """
@@ -175,7 +206,7 @@ class Cyra:
         self.last_speed = magnitude
         
         # Actualiza la energia en funcion del movimiento
-        self.update_energy(magnitude)
+        self.reduce_energy(magnitude)
         
         old_direction = self.prev_direction
         self.prev_direction = new_direction

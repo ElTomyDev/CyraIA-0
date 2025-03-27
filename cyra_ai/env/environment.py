@@ -98,7 +98,7 @@ class Environment:
             cyra.update_hunger(movement)
             
             # ** Actualiza la lista de posiciones **
-            cyra.update_positions(old_dir)
+            cyra.update_prev_positions(old_dir)
             
             # ** Calcular distancias al borde y al alimento despues de moverse **
             new_dist_wall = min(cyra.pos.x, self.screen_width - cyra.pos.x,
