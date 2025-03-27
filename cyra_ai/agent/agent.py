@@ -13,8 +13,8 @@ class Agent:
         self.critic = Critic(input_size) # Critic toma solo el tamaño de la entrada (estado)
         
         # Optimizadores para las redes Actor y Critic
-        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=0.01)
-        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=0.01)
+        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=0.001)
+        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=0.001)
         
         # Scheduler para disminuir la tasa de aprendizaje de manera gradual
         self.scheduler = lr_scheduler.StepLR(self.actor_optimizer, step_size=10, gamma=0.95)

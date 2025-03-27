@@ -2,6 +2,7 @@ import pygame
 from enums.health_states import HealthStates
 from enums.hunger_states import HungerStates
 from enums.energy_states import EnergyStates
+from config.general_config import WINDOWS_WIDTH, WINDOWS_HEIGHT
 
 class Cyra:
     def __init__(self, pos):
@@ -9,7 +10,7 @@ class Cyra:
         self.pos = pygame.math.Vector2(pos)                 # Copia de la posicion inicial
         self.prev_direction = pygame.Vector2(self.pos)      # Direccion previa del movimiento
         self.prev_positions = []                            # Ultimas (max_prev_positions) posiciones
-        self.max_prev_positon = 5                           # Cantidad de posiciones a guardar en la lista (prev_positions)
+        self.max_prev_positions = 5                         # Cantidad de posiciones a guardar en la lista (prev_positions)
         
         # --- Velocidad
         self.max_speed = 3                                  # Velocidad maxima permitida
@@ -143,11 +144,16 @@ class Cyra:
         Actualiza la perdida de energia en funcion al movimiento y el hambre. Acuatilza tambien
         el estado.
         """
-        if self.hunger_state == HungerStates.HUNGRY or self.hunger_state == HungerStates.GOOD:
+        # Actualiza la energia
+        if movement_distance <= 0:
+            self.recharge_energy(self.min_energy_charge)
+        elif self.hunger_state == HungerStates.HUNGRY or self.hunger_state == HungerStates.GOOD:
             self.reduce_energy(movement_distance, self.min_energy_loss)
-        else:
+        elif self.hunger_state == HungerStates.CRITIC:
             self.reduce_energy(movement_distance, self.max_energy_loss)
-        
+            
+            
+        # Actualiza el estado actual de la energia
         if self.energy <= self.max_energy_threshold:
             self.energy_states = EnergyStates.CRITIC
         elif self.energy <= self.min_energy_threshold:
@@ -164,66 +170,62 @@ class Cyra:
         """
         rounded_pos = (round(position.x, 1), round(position.y, 1))
         self.prev_positions.append(rounded_pos)
-        if len(self.prev_positions) > 10:
+        if len(self.prev_positions) > self.max_prev_positions:
             self.prev_positions.pop(0)
-        
+
+    # ---------------------------
+    # FUNCIONES PARA LAS ACCIONES
+    # ---------------------------
     def eat(self, nutrition):
-        """Resetea la hambre cuando come."""
-        self.hunger = max(self.hunger - nutrition, 0.0)
+        """Reduce el hambre y aumenta la energia cuando come."""
+        self.reduce_hunger(nutrition)
         self.recharge_energy(nutrition)
     
-    def move(self, dx, dy, screen_widht, screen_height):
+    def move(self, dx, dy, speed):
         """
         Mueve al cyra sumándole dx y dy a su posición, 
+        aplicando además un factor de speed para modular la velocidad del movimiento,
         respetando la velocidad máxima y controlando que no se salga de la pantalla.
         
         Retorna:
-            old_direction (list): El vector de movimiento anterior (o None si no existe).
-            new_direction (list): El vector de movimiento actual.
+            old_direction (pygame.Vector2): El vector de movimiento anterior (o None si no existe).
+            new_direction (pygame.Vector2): El vector de movimiento actual.
+            magnitude (float): La magnitud (velocidad) del movimiento actual.
         """
         # Reduce la velocidad maxima si tiene poca energia
-        if self.energy <= 0.2:
+        if self.energy <= self.max_energy_threshold:
             self.max_speed = 1
         else:
             self.max_speed = 3
         
-        new_direction = pygame.Vector2(dx, dy)
-        magnitude = new_direction.length()
+        # Crea el vector base a partir de dx y dy
+        base_direction = pygame.Vector2(dx, dy)
+        # ultiplica el vector base por el parametro speed para ajustar la velocidad
+        new_direction = base_direction * speed
+        magnitude = new_direction.length() # Obtiene la magnitud del movimiento
         
-        # Escala el vector de movimient si supera la velocidad maxima
+        # Si la magnitud resultante supera la velocidad maxima, se escala el vector.
         if magnitude > self.max_speed:
             new_direction.scale_to_length(self.max_speed)
-            magnitude = self.max_speed # Se limita la magnitud a max_speed
+            magnitude = self.max_speed # Fija la magnitud a la velocidad maxima permitida
         
         # Actualiza la posicion
         self.pos += new_direction
         
         # Control de bordes
-        self.pos.x = max(0, min(self.pos.x, screen_widht))
-        self.pos.y = max(0, min(self.pos.y, screen_height))
+        self.pos.x = max(0, min(self.pos.x, WINDOWS_WIDTH))
+        self.pos.y = max(0, min(self.pos.y, WINDOWS_HEIGHT))
         
-        # Guarda la magnitud del movimiento
+        # Guarda la magnitud (VELOCIDAD) del movimiento realizado
         self.last_speed = magnitude
         
-        # Actualiza la energia en funcion del movimiento
-        self.reduce_energy(magnitude)
-        
+        # Se guarda y actualiza el vector de direccion anterior
         old_direction = self.prev_direction
         self.prev_direction = new_direction
+        
         return old_direction, new_direction, magnitude
     
-    def reset(self, screen_width, screen_height):
-        """ Reinicia a los cyras """
-        self.pos = pygame.math.Vector2(screen_width // 2, screen_height // 2)
-        self.last_speed = 0.0
-        self.prev_direction = pygame.Vector2(self.pos)
-        self.max_speed = 3
-        self.hunger = self.hunger
-        self.energy = self.max_energy
-        self.health = self.max_health
-        self.detected_objects = []
-        self.health_state = 0
-    
+
     def detect_collision(self, obj):
         """
         Detecta si un objeto colisiona con el área de detección del Cyra.
@@ -243,6 +245,18 @@ class Cyra:
         
         # Actualizamos la lista
         self.detected_objects = new_detected
+    
+    def reset(self, screen_width, screen_height):
+        """ Reinicia a los cyras """
+        self.pos = pygame.math.Vector2(screen_width // 2, screen_height // 2)
+        self.last_speed = 0.0
+        self.prev_direction = pygame.Vector2(self.pos)
+        self.max_speed = 3
+        self.hunger = self.hunger
+        self.energy = self.max_energy
+        self.health = self.max_health
+        self.detected_objects = []
+        self.health_state = 0
     
     def get_state(self):
         """
