@@ -25,7 +25,7 @@ class Environment:
         self.reward = 0
         
        # ---------- Umbrales ----------
-        self.eat_threshold = 35.0                  # Umbral para considerar que se "come" la comida
+        self.eat_threshold = 25.0                  # Umbral para considerar que se "come" la comida
         self.angle_threshold = math.radians(15.0)  # Umbral para considerar bonus por girar
         self.corner_threshold = 20.0               # Umbral de esquina para otorgar penalizacion
         self.max_repeat_position = 3               # Maximas posiciones repetidas permitidas; si aumenta, se penaliza
@@ -35,15 +35,15 @@ class Environment:
         # Recompensas y Penalizaciones de la Comida y el Hambre
         self.enable_food_and_hunger_rewards = True # Habilita o desabilita las recompensas y penalizaciones de la comida y el hambre
         
-        self.upgrade_food_dist_bonus = 10.5        # Bonus si mejora la distancia hacia la comida
-        self.food_eat_bonus = 30.5                 # Bonus extra cuando se come la comida
-        self.food_found_bonus = 4.0                # Bonus por encontrar comida en el rango de vision
+        self.upgrade_food_dist_bonus = 0.0         # Bonus si mejora la distancia hacia la comida
+        self.food_eat_bonus = 0.0                  # Bonus extra cuando se come la comida
+        self.food_found_bonus = 0.0                # Bonus por encontrar comida en el rango de vision
         self.hunger_good_bonus = 0.0               # Bonus por tener el hambre en buen estado
         
-        self.no_upgrade_food_dist_penalty = 3.0    # Penalizacion si no mejora la distancia a la comida
-        self.no_food_in_range_penalty = 6.2        # Penalizacion si tiene hambre y no se encuentra comida en el rango de vision
-        self.hunger_hungry_penalty = 4.5           # Penalización si el estado es hambriento
-        self.hunger_critic_penalty = 4.5           # Penalizacion si el del hambre estado es critico
+        self.no_upgrade_food_dist_penalty = 0.0    # Penalizacion si no mejora la distancia a la comida
+        self.no_food_in_range_penalty = 0.0        # Penalizacion si tiene hambre y no se encuentra comida en el rango de vision
+        self.hunger_hungry_penalty = 0.0           # Penalización si el estado es hambriento
+        self.hunger_critic_penalty = 0.0           # Penalizacion si el del hambre estado es critico
         
         # Recompensas y Penalizaciones de la Energia
         self.enable_energy_rewards = True   # Habilita o desabilita las recompensas y penalizaciones de la energia
@@ -74,7 +74,7 @@ class Environment:
         
         self.border_penalty = 0.0                # Penalizacion por llegar al borde de la pantalla
         self.corner_penalty = 0.0                # Penalizacion por estar en la esquina
-        self.repeat_position_penalty = 0.05      # Penalizacion si repite posiciones en el mapa 
+        self.repeat_position_penalty = 0.0       # Penalizacion si repite posiciones en el mapa 
     
     def reset(self):
         """
@@ -272,6 +272,52 @@ class Environment:
     #--------------------
     # FUNCIONES AUXILIARES
     #--------------------
+    def get_random_rewards_and_penalty(self):
+        """
+        Actualiza todos los valores de las recompensas y castigos
+        fomar random con un rango del 0.0 a 1.0
+        """
+        x = 0.0
+        y = 1.0
+        random_value = random.uniform(x, y)
+        
+        # Recompensas y Penalizaciones de la Comida y el Hambre
+        self.upgrade_food_dist_bonus = random_value         
+        self.food_eat_bonus = random_value
+        self.food_found_bonus = random_value         
+        self.hunger_good_bonus = random_value       
+        
+        self.no_upgrade_food_dist_penalty = random_value    
+        self.no_food_in_range_penalty = random_value
+        self.hunger_hungry_penalty = random_value
+        self.hunger_critic_penalty = random_value  
+        
+        # Recompensas y Penalizaciones de la Energia
+        self.energy_recharge_bonus = random_value
+        self.energy_good_bonus = random_value
+        
+        self.energy_weary_penalty = random_value
+        self.energy_critic_penalty = random_value
+        
+        # Recompensas y Penalizaciones de la Salud
+        self.health_recove_bonus = random_value
+        self.health_any_bonus = random_value
+        self.health_good_bonus = random_value 
+        
+        self.health_loss_penalty = random_value
+        self.health_wounded_penalty = random_value
+        self.health_critic_penalty = random_value
+        self.dead_penalty = random_value
+        
+        # Recompensas y Penalizaciones de la Pocicion y Direccion
+        self.change_direction_bonus = random_value        
+        self.away_border_bonus = random_value
+        
+        self.border_penalty = random_value    
+        self.corner_penalty = random_value       
+        self.repeat_position_penalty = random_value       
+        
+    
     def get_enriched_states(self):
         """
         Recorre todos los cyras y genera un vector de estado enriquecido para cada uno.

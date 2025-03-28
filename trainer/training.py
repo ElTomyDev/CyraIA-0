@@ -19,7 +19,7 @@ class Train:
         # Inicializacion del entorno y agentes
         self.env = Environment(self.view.screen, num_cyras=NUM_AGENTS)
         self.agents = [Agent() for _ in range(NUM_AGENTS)]
-        
+        self.env.get_random_rewards_and_penalty()
         # Carga el modelo guardado y este existe y evalua para obtener una recompensa base
         self.load_model_if_exist()
     
