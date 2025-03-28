@@ -1,4 +1,5 @@
 import pygame
+import random
 from enums.health_actions import HealthActions
 from enums.health_states import HealthStates
 from enums.hunger_states import HungerStates
@@ -54,7 +55,7 @@ class Cyra:
         self.min_health_loss_hunger = 0.7                   # Umbral minimo de hambre para perder salud
         self.max_health_loss_hunger = 0.95                  # Umbral maximo de hambre para perder salud
         self.min_cant_health = 50.0                         # Umbral minimo para considerarse herido
-        self.max_cant_health = 30.0                         # Unbral maximo para considerarse en estado critico
+        self.max_cant_health = 30.0                         # Umbral maximo para considerarse en estado critico
         
         # --- Deteccion de objetos
         self.detect_radio = 150.0                           # Radio de deteccion
@@ -66,7 +67,7 @@ class Cyra:
         Se encarga de actualizar todos los parametros y estados del cyra.
         """
         # ** Actualiza las detecciones de los objetos **
-        self.update_detection_objects()
+        self.update_detection_objects(all_objects)
         self.update_food_objects()
         
         # ** Obtiene la cantidad total de objetos y las cantidades de cada objeto detectado por separado **
@@ -77,8 +78,8 @@ class Cyra:
         nearest_food = self.get_nearest_food()
         
         # ** Obtiene la distancia hacia la comida mas cercana antes de moverse **
-        old_dist_food = min(self.pos.x, nearest_food.pos.x - self.pos.x,
-                              self.pos.y, nearest_food.pos.y - self.pos.y)
+        old_dist_food = min(self.pos.x, nearest_food.x - self.pos.x,
+                            self.pos.y, nearest_food.y - self.pos.y)
         
         # ** Calcular distancias al borde y al alimento antes de moverse **
         old_dist_border = min(self.pos.x, WINDOWS_WIDTH - self.pos.x,
@@ -97,8 +98,8 @@ class Cyra:
         # ---- FUNCIONES DESPUES DE MOVERSE ---- >
         
         # ** Obtiene la distancia hacia la comida mas cercana antes de moverse **
-        new_dist_food = min(self.pos.x, nearest_food.pos.x - self.pos.x,
-                              self.pos.y, nearest_food.pos.y - self.pos.y)
+        new_dist_food = min(self.pos.x, nearest_food.x - self.pos.x,
+                            self.pos.y, nearest_food.y - self.pos.y)
         
         # ** Calcular distancias al borde y al alimento despues de moverse **
         new_dist_border = min(self.pos.x, WINDOWS_WIDTH - self.pos.x,
@@ -109,7 +110,6 @@ class Cyra:
         
         # ** Actualiza la lista de posiciones **
         self.update_prev_positions(old_pos)
-        
 
         return old_dist_food, new_dist_food, old_dist_border, new_dist_border, old_pos, old_dir, new_dir, move_speed, cant_objects, cant_food, nearest_food
         
@@ -155,7 +155,6 @@ class Cyra:
             self.health_state = HealthStates.WOUNDED
         else:
             self.health_state = HealthStates.GOOD
-
     
     # ------------------------
     # FUNCIONES PARA EL HAMBRE
@@ -183,7 +182,7 @@ class Cyra:
         elif self.hunger >= self.min_hunger_threshold:
             self.hunger_state = HungerStates.HUNGRY
         else:
-            self.hunger = HungerStates.GOOD
+            self.hunger_state = HungerStates.GOOD
     
     # -------------------------
     # FUNCIONES PARA LA ENERGIA
@@ -345,28 +344,38 @@ class Cyra:
         Retorna:
             El objeto comida más cercano o None si la lista está vacía.
         """
-        # Si la lista de comida está vacía, retorna None.
-        if not self.food_objects:
-            return None
-
-        # Calcula la comida más cercana usando la función min y la distancia entre posiciones.
-        nearest_food = min(self.food_objects, key=lambda food: self.pos.distance_to(food.pos))
-        return nearest_food
+        if len(self.food_objects) >= 1:
+            # Calcula la comida más cercana usando la función min y la distancia entre posiciones.
+            nearest_food = min(self.food_objects, key=lambda food: self.pos.distance_to(food.pos))
+            return pygame.Vector2(nearest_food.pos.x, nearest_food.pos.y)
+        else:
+            return pygame.Vector2(0.0, 0.0)
     
     # ---------------
     # OTRAS FUNCIONES
     # ---------------
-    def reset(self, screen_width, screen_height):
+    def reset(self):
         """ Reinicia a los cyras """
-        self.pos = pygame.math.Vector2(screen_width // 2, screen_height // 2)
-        self.last_speed = 0.0
-        self.prev_direction = pygame.Vector2(self.pos)
-        self.max_speed = 3
-        self.hunger = self.hunger
-        self.energy = self.max_energy
+        # Reinicia los estados
+        self.hunger_state = HungerStates.GOOD
+        self.energy_state = EnergyStates.GOOD
+        self.health_state = HealthStates.GOOD
+        self.health_action = HealthActions.ANY
+        
+        # Reinicia los valores (Hambre, Salud, Energia)
         self.health = self.max_health
+        self.energy = self.max_energy
+        self.hunger = 0.0
+        
+        # Reinicia valores de movimiento (Posicion, Direcciones, Etc)
+        self.last_speed = 0.0
+        self.max_speed = 3
+        self.pos = pygame.math.Vector2(random.randint(0, WINDOWS_WIDTH), random.randint(0, WINDOWS_HEIGHT))
+        self.prev_direction = pygame.Vector2(self.pos)
+        
+        # Reinicia lista de objetos
         self.detected_objects = []
-        self.health_action = 0
+        self.food_objects = []
     
     def get_state(self):
         """
@@ -378,12 +387,15 @@ class Cyra:
         return [self.pos.x,
                 self.pos.y,
                 self.hunger,
+                self.max_hunger,
                 self.energy,
+                self.max_energy,
                 self.health,
-                self.health_action,
-                self.health_state,
-                self.energy_state,
-                self.hunger_state,
+                self.max_health,
+                self.health_action.value,
+                self.health_state.value,
+                self.energy_state.value,
+                self.hunger_state.value,
                 self.last_speed,
                 self.max_speed]
     

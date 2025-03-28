@@ -1,6 +1,6 @@
 from enum import Enum
 
 class HealthStates(Enum):
-    GOOD = 0
-    WOUNDED = 1
-    CRITIC = 2
+    GOOD = 1
+    WOUNDED = 2
+    CRITIC = 3

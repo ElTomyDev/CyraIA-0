@@ -1,13 +1,11 @@
 import torch
-import random
-import math
 import torch.optim as optim
 from torch.optim import lr_scheduler
 from cyra_ai.models.actor import Actor
 from cyra_ai.models.critic import Critic
 
 class Agent:
-    def __init__(self, input_size=13, output_size=2, gamma=0.99):
+    def __init__(self, input_size=29, output_size=3, gamma=0.99):
         # Inicializamos el actor (política) y el crítico (valor), usando las clases Actor y Critic
         self.actor = Actor(input_size, output_size) # Actor toma el tamaño de la entrada y el número de acciones posibles
         self.critic = Critic(input_size) # Critic toma solo el tamaño de la entrada (estado)
@@ -34,10 +32,10 @@ class Agent:
         Recibe un estado y devuelve la acción.
         También almacena el log_prob y la entropía de la distribución para regular la exploración.
         """
-        # Convertimos el estado a un tensor de tipo float32 y lo preparamos para pasar al modelo
-        state = torch.tensor(state, dtype=torch.float32).clone().unsqueeze(0) # Añadimos una dimensión extra para lotes de tamaño 1
+        # Converte el estado a un tensor de tipo float32 y lo preparamos para pasar al modelo
+        state = torch.tensor(state, dtype=torch.float32).clone().unsqueeze(0) # Añade una dimensión extra para lotes de tamaño 1
         action_mean = self.actor(state) # El actor genera una media para la distribución de las acciones
-        std = torch.tensor([self.exploration_rate, self.exploration_rate]) # Desviación estándar para la distribución (controla exploración)
+        std = torch.tensor([self.exploration_rate, self.exploration_rate, self.exploration_rate]) # Desviación estándar para la distribución (controla exploración)
         
         # Creamos una distribución normal con la media y la desviación estándar
         dist = torch.distributions.Normal(action_mean.squeeze(0), std)
