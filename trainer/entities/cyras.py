@@ -1,4 +1,5 @@
 import pygame
+from enums.health_actions import HealthActions
 from enums.health_states import HealthStates
 from enums.hunger_states import HungerStates
 from enums.energy_states import EnergyStates
@@ -35,10 +36,9 @@ class Cyra:
         self.max_energy_loss = 0.05                         # Maxima perdida de energia
         self.min_energy_charge = 0.05                       # Minima carga de energia
         self.max_energy_charge = 0.1                        # Maxima carga de energia
-        self.energy_states = EnergyStates.GOOD              # Estado actual de la energia
+        self.energy_state = EnergyStates.GOOD              # Estado actual de la energia
         self.min_energy_threshold = 0.4                     # Umbral minimo para considerarse cansado
         self.max_energy_threshold = 0.2                     # Umbral maximo para considerarse muy cansado
-        
         
         # --- Salud
         self.health = 100.0                                 # Nivel de salud actual
@@ -47,11 +47,14 @@ class Cyra:
         self.max_health_charge = 0.5                        # Candidad maxima de aumento de salud
         self.min_health_loss = 0.05                         # Cantidad minima de decremento de salud
         self.max_health_loss = 0.1                          # Cantidad maxima de decremento de salud
-        self.health_state = HealthStates.ANY                # Estado actual de la salud
+        self.health_action = HealthActions.ANY              # Accion actual de la salud
+        self.health_state = HealthStates.GOOD               # Estado actual de la salud
         self.min_health_recovery_hunger = 0.6               # Umbral minimo de hambre para recuperar salud
         self.max_health_recovery_hunger = 0.2               # Umbral maximo de hambre para recuperar salud
         self.min_health_loss_hunger = 0.7                   # Umbral minimo de hambre para perder salud
         self.max_health_loss_hunger = 0.95                  # Umbral maximo de hambre para perder salud
+        self.min_cant_health = 50.0                         # Umbral minimo para considerarse herido
+        self.max_cant_health = 30.0                         # Unbral maximo para considerarse en estado critico
         
         # --- Deteccion de objetos
         self.detect_radio = 150.0                           # Radio de deteccion
@@ -129,20 +132,30 @@ class Cyra:
         """
         Disminuye la salud si el hambre sobrepasa el umbral.
         """
+        # Actualiza la salud y la accion actual de la salud
         if self.hunger >= self.max_health_loss_hunger:
             self.reduce_health(self.max_health_loss)
-            self.health_state = HealthStates.LOSS
+            self.health_action = HealthActions.LOSS
         elif self.hunger >= self.min_health_loss_hunger:
             self.reduce_health(self.min_health_loss)
-            self.health_state = HealthStates.LOSS
+            self.health_action = HealthActions.LOSS
         elif self.hunger <= self.max_health_recovery_hunger:
             self.recharge_health(self.max_health_charge)
-            self.health_state = HealthStates.RECOVE
+            self.health_action = HealthActions.RECOVE
         elif self.hunger <= self.min_health_recovery_hunger:
             self.recharge_health(self.min_health_charge)
-            self.health_state = HealthStates.RECOVE
+            self.health_action = HealthActions.RECOVE
         else:
-            self.health_state = HealthStates.ANY
+            self.health_action = HealthActions.ANY
+        
+        # Actualiza es estado actual de la salud
+        if self.health <= self.max_cant_health:
+            self.health_state = HealthStates.CRITIC
+        elif self.health <= self.min_cant_health:
+            self.health_state = HealthStates.WOUNDED
+        else:
+            self.health_state = HealthStates.GOOD
+
     
     # ------------------------
     # FUNCIONES PARA EL HAMBRE
@@ -205,11 +218,11 @@ class Cyra:
             
         # Actualiza el estado actual de la energia
         if self.energy <= self.max_energy_threshold:
-            self.energy_states = EnergyStates.CRITIC
+            self.energy_state = EnergyStates.CRITIC
         elif self.energy <= self.min_energy_threshold:
-            self.energy_states = EnergyStates.WEARY
+            self.energy_state = EnergyStates.WEARY
         else:
-            self.energy_states = EnergyStates.GOOD
+            self.energy_state = EnergyStates.GOOD
         
     # --------------------------
     # FUNCIONES PARA LA POSICION
@@ -353,7 +366,7 @@ class Cyra:
         self.energy = self.max_energy
         self.health = self.max_health
         self.detected_objects = []
-        self.health_state = 0
+        self.health_action = 0
     
     def get_state(self):
         """
@@ -362,7 +375,17 @@ class Cyra:
         Returns:
             list: [x, y, hunger, last_speed, prev_direction, energy, max_energy, max_speed]
         """
-        return [self.pos.x, self.pos.y, self.hunger, self.last_speed, self.energy, self.health, len(self.detected_objects), self.health_state]
+        return [self.pos.x,
+                self.pos.y,
+                self.hunger,
+                self.energy,
+                self.health,
+                self.health_action,
+                self.health_state,
+                self.energy_state,
+                self.hunger_state,
+                self.last_speed,
+                self.max_speed]
     
     def draw(self, screen):
         """
