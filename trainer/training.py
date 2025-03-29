@@ -4,10 +4,13 @@ from cyra_ai.env.environment import Environment
 from cyra_ai.agent.agent import Agent
 from config.trainer_config import *
 from config.general_config import BEST_MODEL_PATH, FPS
-
+from graphics.training_graphics import TrainGraphics
 
 class Train:
     def __init__(self, view):
+        
+        # Inicializa los graficos de entrenamiento
+        self.train_graphics = TrainGraphics()
         
         # Obtiene la vista
         self.view = view
@@ -59,8 +62,11 @@ class Train:
                 states = next_states
 
                 if step % 10 == 0:
+                    self.train_graphics.update_agents_and_rewards_bar_graph(episode_rewards)
+                    
                     pygame.display.flip()
                     self.view.clock.tick(FPS)
+                
                 
                 if done:
                     break
