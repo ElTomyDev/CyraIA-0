@@ -18,7 +18,7 @@ class Food:
     def reset(self):
         """Reposiciona la comida y asigna un valor nutricional aleatorio."""
         self.pos = pygame.Vector2(random.randint(0, WINDOWS_WIDTH), random.randint(0, WINDOWS_HEIGHT))
-        self.nutrition = random.uniform(0.0, 1.0)
+        self.nutrition = random.uniform(0.0, 100.0)
     
     def draw(self, screen):
         """

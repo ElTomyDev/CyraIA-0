@@ -62,10 +62,13 @@ class Train:
                     episode_rewards[i] += rewards[i]
                 states = next_states
 
-                if step % 10 == 0:
-                    self.train_graphics.update_agents_and_rewards_bar_graph(episode_rewards)
+                if step % 1 == 0:
                     pygame.display.flip()
                     self.view.clock.tick(FPS)
+                
+                # Actualiza los valores de las graficas
+                healths, energys, hungers = self.get_cyras_status()
+                self.train_graphics.update_graph_data(episode_rewards, healths, energys, hungers, self.view.generation, episode, step)
                 
                 if done:
                     break
@@ -149,3 +152,19 @@ class Train:
             self.agents[best_index].save_model(BEST_MODEL_PATH)
             print("Se guardo un mejor modelo")
         self.best_agent_index = best_index
+    
+    # -------------------------------------------------------------
+    # FUNCIONES PARA OBTENER INFORMACION DE LOS CYRAS Y LOS AGENTES
+    # -------------------------------------------------------------
+    def get_cyras_status(self):
+        """
+        Obtiene la salud, energia y hambre de todos los cyras.
+        """
+        health_list = []
+        energy_list = []
+        hunger_list = []
+        for cyra in self.env.cyras:
+            health_list.append(cyra.health)
+            energy_list.append(cyra.energy)
+            hunger_list.append(cyra.hunger)
+        return health_list, energy_list, hunger_list

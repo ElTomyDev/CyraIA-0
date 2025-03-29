@@ -82,7 +82,6 @@ class Environment:
         Reinicia el entorno: reposiciona al cyras en el centro y reubica la comida
         """
         states = []
-        self.cant_deads = 0
         for food in self.food:
             food.reset()
         for cyra in self.cyras:
@@ -146,7 +145,8 @@ class Environment:
         for cyra in self.cyras:
             if cyra.health_state == HealthStates.DEAD:
                 self.cant_deads += 1
-        done = self.cant_deads >= len(self.cyras)
+        done = self.cant_deads >= self.num_cyras
+        self.cant_deads = 0
         return states, rewards, done
     
     # -------------------------------------
