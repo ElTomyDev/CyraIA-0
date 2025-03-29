@@ -4,7 +4,7 @@ from cyra_ai.env.environment import Environment
 from cyra_ai.agent.agent import Agent
 from config.trainer_config import *
 from config.general_config import BEST_MODEL_PATH, FPS
-from graphics.training_graphics import TrainGraphics
+from graphics_and_data.training_graphics import TrainGraphics
 
 class Train:
     def __init__(self, view):
