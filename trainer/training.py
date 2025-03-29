@@ -40,7 +40,7 @@ class Train:
         for episode in range(NUM_EPISODES):
             self.view.process_events()
             
-            states = self.env.reset() # Reposiciona a todos los cyras en el centro y actualiza la comida
+            states = self.env.reset() # Reposiciona a todos los cyras y actualiza la comida
             episode_rewards = [0.0 for _ in range(NUM_AGENTS)]
             
             # Actualiza la pantalla al inicio de cada episodio
@@ -57,16 +57,15 @@ class Train:
                 
                 # Almacena la recompensa de cada agente
                 for i in range(NUM_AGENTS):
+                    #agent.store_reward(rewards[i])
                     self.agents[i].store_reward(rewards[i])
                     episode_rewards[i] += rewards[i]
                 states = next_states
 
                 if step % 10 == 0:
                     self.train_graphics.update_agents_and_rewards_bar_graph(episode_rewards)
-                    
                     pygame.display.flip()
                     self.view.clock.tick(FPS)
-                
                 
                 if done:
                     break

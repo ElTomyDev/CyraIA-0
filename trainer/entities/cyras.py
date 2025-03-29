@@ -149,6 +149,8 @@ class Cyra:
             self.health_action = HealthActions.ANY
         
         # Actualiza es estado actual de la salud
+        if self.health <= 0.0:
+            self.health_state = HealthStates.DEAD
         if self.health <= self.max_cant_health:
             self.health_state = HealthStates.CRITIC
         elif self.health <= self.min_cant_health:
@@ -287,6 +289,12 @@ class Cyra:
         
         return old_direction, new_direction, magnitude
     
+    def dead(self):
+        """
+        Hace que el cyra muera.
+        """
+        self.max_speed = 0
+        
     # -----------------------------
     # FUNCIONES PARA LAS COLISIONES
     # -----------------------------

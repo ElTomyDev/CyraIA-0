@@ -17,6 +17,7 @@ class TrainGraphics:
             dcc.Graph(id="graph"),
             dcc.Interval(id="interval", interval=2500, n_intervals=0)
         ])
+        
         @self.app.callback(
             Output("graph", "figure"),
             [Input("interval", "n_intervals")]
