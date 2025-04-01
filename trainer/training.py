@@ -5,6 +5,7 @@ from cyra_ai.agent.agent import Agent
 from config.trainer_config import *
 from config.general_config import BEST_MODEL_PATH, FPS
 from graphics_and_data.training_graphics import TrainGraphics
+from graphics_and_data.training_data import update_gen_and_rewards_data
 
 class Train:
     def __init__(self, view):
@@ -83,6 +84,7 @@ class Train:
                 total_rewards[i] += episode_rewards[i]
             
         avg_reward = [total / NUM_EPISODES for total in total_rewards]
+        update_gen_and_rewards_data(self.view.generation, self.best_reward)
         return avg_reward
     
     def evaluate_agents(self):

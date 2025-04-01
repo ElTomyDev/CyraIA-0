@@ -7,6 +7,7 @@ from enums.health_actions import HealthActions
 from enums.health_states import HealthStates
 from enums.hunger_states import HungerStates
 from enums.energy_states import EnergyStates
+from graphics_and_data.training_data import create_new_rows
 
 class Environment:
     def __init__(self, screen, num_cyras=5):
@@ -305,7 +306,35 @@ class Environment:
         
         self.border_penalty = random_value    
         self.corner_penalty = random_value       
-        self.repeat_position_penalty = random_value       
+        self.repeat_position_penalty = random_value
+        
+        create_new_rows(
+            self.upgrade_food_dist_bonus,
+            self.food_eat_bonus,
+            self.food_found_bonus,
+            self.hunger_good_bonus,
+            self.no_upgrade_food_dist_penalty,
+            self.no_food_in_range_penalty,
+            self.hunger_hungry_penalty,
+            self.hunger_critic_penalty,
+            self.energy_recharge_bonus,
+            self.energy_good_bonus,
+            self.energy_weary_penalty,
+            self.energy_critic_penalty,
+            self.health_recove_bonus,
+            self.health_any_bonus,
+            self.health_good_bonus,
+            self.health_loss_penalty,
+            self.health_wounded_penalty,
+            self.health_critic_penalty,
+            self.dead_penalty,
+            self.change_direction_bonus,
+            self.away_border_bonus,
+            self.border_penalty,
+            self.corner_penalty,
+            self.repeat_position_penalty
+            )
+              
         
     def get_enriched_states(self, cyra: Cyra, enriched_list : list):
         """
