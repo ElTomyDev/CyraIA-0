@@ -4,10 +4,14 @@ from cyra_ai.env.environment import Environment
 from cyra_ai.agent.agent import Agent
 from config.trainer_config import *
 from config.general_config import BEST_MODEL_PATH, FPS
-
+from graphics_and_data.training_graphics import TrainGraphics
+from graphics_and_data.training_data import update_gen_and_rewards_data
 
 class Train:
     def __init__(self, view):
+        
+        # Inicializa los graficos de entrenamiento
+        self.train_graphics = TrainGraphics()
         
         # Obtiene la vista
         self.view = view
@@ -18,6 +22,7 @@ class Train:
         
         # Inicializacion del entorno y agentes
         self.env = Environment(self.view.screen, num_cyras=NUM_AGENTS)
+        self.env.get_random_rewards_and_penalty() # Generan valores random para las recompensas y penalizaciones
         self.agents = [Agent() for _ in range(NUM_AGENTS)]
         
         # Carga el modelo guardado y este existe y evalua para obtener una recompensa base
@@ -36,7 +41,7 @@ class Train:
         for episode in range(NUM_EPISODES):
             self.view.process_events()
             
-            states = self.env.reset() # Reposiciona a todos los cyras en el centro y actualiza la comida
+            states = self.env.reset() # Reposiciona a todos los cyras y actualiza la comida
             episode_rewards = [0.0 for _ in range(NUM_AGENTS)]
             
             # Actualiza la pantalla al inicio de cada episodio
@@ -53,13 +58,18 @@ class Train:
                 
                 # Almacena la recompensa de cada agente
                 for i in range(NUM_AGENTS):
+                    #agent.store_reward(rewards[i])
                     self.agents[i].store_reward(rewards[i])
                     episode_rewards[i] += rewards[i]
                 states = next_states
 
-                if step % 10 == 0:
+                if step % 1 == 0:
                     pygame.display.flip()
                     self.view.clock.tick(FPS)
+                
+                # Actualiza los valores de las graficas
+                healths, energys, hungers = self.get_cyras_status()
+                self.train_graphics.update_graph_data(episode_rewards, healths, energys, hungers, self.view.generation, episode, step)
                 
                 if done:
                     break
@@ -74,6 +84,7 @@ class Train:
                 total_rewards[i] += episode_rewards[i]
             
         avg_reward = [total / NUM_EPISODES for total in total_rewards]
+        update_gen_and_rewards_data(self.view.generation, self.best_reward)
         return avg_reward
     
     def evaluate_agents(self):
@@ -143,3 +154,19 @@ class Train:
             self.agents[best_index].save_model(BEST_MODEL_PATH)
             print("Se guardo un mejor modelo")
         self.best_agent_index = best_index
+    
+    # -------------------------------------------------------------
+    # FUNCIONES PARA OBTENER INFORMACION DE LOS CYRAS Y LOS AGENTES
+    # -------------------------------------------------------------
+    def get_cyras_status(self):
+        """
+        Obtiene la salud, energia y hambre de todos los cyras.
+        """
+        health_list = []
+        energy_list = []
+        hunger_list = []
+        for cyra in self.env.cyras:
+            health_list.append(cyra.health)
+            energy_list.append(cyra.energy)
+            hunger_list.append(cyra.hunger)
+        return health_list, energy_list, hunger_list

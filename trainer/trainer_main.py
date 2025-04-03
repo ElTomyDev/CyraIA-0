@@ -38,10 +38,10 @@ class TrainerView:
     def run_next_generation(self):
         """
         Ejecuta una nueva generación:
-         - Incrementa el contador de generación.
-         - Ejecuta el entrenamiento (varios episodios).
-         - Guarda el mejor modelo si se mejora la recompensa promedio.
-         - Guarda el número de generación.
+            - Incrementa el contador de generación.
+            - Ejecuta el entrenamiento (varios episodios).
+            - Guarda el mejor modelo si se mejora la recompensa promedio.
+            - Guarda el número de generación.
         """
         self.generation += 1
         
