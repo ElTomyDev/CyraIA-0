@@ -29,7 +29,7 @@ class Environment:
         self.cant_deads = 0 # Cantidad de cyras muertos
         
         # ---------- Umbrales ----------
-        self.eat_threshold = 25.0                  # Umbral para considerar que se "come" la comida
+        self.eat_threshold = 30.0                  # Umbral para considerar que se "come" la comida
         self.angle_threshold = math.radians(15.0)  # Umbral para considerar bonus por girar
         self.corner_threshold = 20.0               # Umbral de esquina para otorgar penalizacion
         self.max_repeat_position = 3               # Maximas posiciones repetidas permitidas; si aumenta, se penaliza
@@ -71,7 +71,7 @@ class Environment:
         self.dead_penalty = 0.0              # Penalizacion si muere
         
         # Recompensas y Penalizaciones de la Pocicion y Direccion
-        self.enable_pos_and_dir_rewards = True   # Habilita o desabilita las recompensas y penalizaciones de las direcciones y posiciones
+        self.enable_pos_and_dir_rewards = False   # Habilita o desabilita las recompensas y penalizaciones de las direcciones y posiciones
         
         self.change_direction_bonus = 0.0        # Bonus por cambiar de direccion
         self.away_border_bonus = 0.0             # Bonus por alejarse de la pared
