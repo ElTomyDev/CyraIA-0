@@ -8,6 +8,8 @@ from enums.health_states import HealthStates
 from enums.hunger_states import HungerStates
 from enums.energy_states import EnergyStates
 from graphics_and_data.training_data import create_new_rows
+from config.general_config import BACKGROUND_COLOR
+
 
 class Environment:
     def __init__(self, screen, num_cyras=5):
@@ -19,14 +21,14 @@ class Environment:
         self.random_pos = (random.randint(0, self.screen_width), random.randint(0, self.screen_height)) # Direccion random
         
         # Lista de agentes (cyras) y la comida
-        self.cyras = [Cyra(pygame.math.Vector2(self.random_pos)) for _ in range(self.num_cyras)]
+        self.cyras = [Cyra(pygame.math.Vector2(self.random_pos), i) for i in range(self.num_cyras)]
         self.food = [Food() for _ in range(10)]
         self.all_objects = []
         
         self.reward = 0
         self.cant_deads = 0 # Cantidad de cyras muertos
         
-       # ---------- Umbrales ----------
+        # ---------- Umbrales ----------
         self.eat_threshold = 25.0                  # Umbral para considerar que se "come" la comida
         self.angle_threshold = math.radians(15.0)  # Umbral para considerar bonus por girar
         self.corner_threshold = 20.0               # Umbral de esquina para otorgar penalizacion
@@ -95,7 +97,7 @@ class Environment:
         """
         Borra y redibuja la pantalla con la comida y los cyras.
         """
-        self.screen.fill((0, 0, 0))
+        self.screen.fill(BACKGROUND_COLOR)
         for food in self.food:
             food.draw(self.screen)
         for cyra in self.cyras:
@@ -112,7 +114,7 @@ class Environment:
         rewards = []
         states = []
         self.all_objects = self.food
-           
+        
         for i, cyra in enumerate(self.cyras):
             self.reward = 0
             action = actions[i]
@@ -144,9 +146,9 @@ class Environment:
         
         self.draw()
         for cyra in self.cyras:
-            if cyra.health_state == HealthStates.DEAD:
+            if cyra.health <= 0.0:
                 self.cant_deads += 1
-        done = self.cant_deads >= self.num_cyras
+        done = self.cant_deads >= len(self.cyras)
         self.cant_deads = 0
         return states, rewards, done
     
@@ -270,43 +272,42 @@ class Environment:
         """
         x = 0.0
         y = 1.0
-        random_value = random.uniform(x, y)
         
         # Recompensas y Penalizaciones de la Comida y el Hambre
-        self.upgrade_food_dist_bonus = random_value         
-        self.food_eat_bonus = random_value
-        self.food_found_bonus = random_value         
-        self.hunger_good_bonus = random_value       
+        self.upgrade_food_dist_bonus = random.uniform(x, y)         
+        self.food_eat_bonus = random.uniform(x, y)
+        self.food_found_bonus = random.uniform(x, y)         
+        self.hunger_good_bonus = random.uniform(x, y)       
         
-        self.no_upgrade_food_dist_penalty = random_value    
-        self.no_food_in_range_penalty = random_value
-        self.hunger_hungry_penalty = random_value
-        self.hunger_critic_penalty = random_value  
+        self.no_upgrade_food_dist_penalty = random.uniform(x, y)    
+        self.no_food_in_range_penalty = random.uniform(x, y)
+        self.hunger_hungry_penalty = random.uniform(x, y)
+        self.hunger_critic_penalty = random.uniform(x, y)  
         
         # Recompensas y Penalizaciones de la Energia
-        self.energy_recharge_bonus = random_value
-        self.energy_good_bonus = random_value
+        self.energy_recharge_bonus = random.uniform(x, y)
+        self.energy_good_bonus = random.uniform(x, y)
         
-        self.energy_weary_penalty = random_value
-        self.energy_critic_penalty = random_value
+        self.energy_weary_penalty = random.uniform(x, y)
+        self.energy_critic_penalty = random.uniform(x, y)
         
         # Recompensas y Penalizaciones de la Salud
-        self.health_recove_bonus = random_value
-        self.health_any_bonus = random_value
-        self.health_good_bonus = random_value 
+        self.health_recove_bonus = random.uniform(x, y)
+        self.health_any_bonus = random.uniform(x, y)
+        self.health_good_bonus = random.uniform(x, y) 
         
-        self.health_loss_penalty = random_value
-        self.health_wounded_penalty = random_value
-        self.health_critic_penalty = random_value
-        self.dead_penalty = random_value
+        self.health_loss_penalty = random.uniform(x, y)
+        self.health_wounded_penalty = random.uniform(x, y)
+        self.health_critic_penalty = random.uniform(x, y)
+        self.dead_penalty = random.uniform(x, y)
         
         # Recompensas y Penalizaciones de la Pocicion y Direccion
-        self.change_direction_bonus = random_value        
-        self.away_border_bonus = random_value
+        self.change_direction_bonus = random.uniform(x, y)        
+        self.away_border_bonus = random.uniform(x, y)
         
-        self.border_penalty = random_value    
-        self.corner_penalty = random_value       
-        self.repeat_position_penalty = random_value
+        self.border_penalty = random.uniform(x, y)    
+        self.corner_penalty = random.uniform(x, y)       
+        self.repeat_position_penalty = random.uniform(x, y)
         
         create_new_rows(
             self.upgrade_food_dist_bonus,
@@ -334,7 +335,7 @@ class Environment:
             self.corner_penalty,
             self.repeat_position_penalty
             )
-              
+        
         
     def get_enriched_states(self, cyra: Cyra, enriched_list : list):
         """
