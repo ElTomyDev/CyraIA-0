@@ -87,35 +87,35 @@ def create_new_rows(ufdb,feb,ffb,hgb,nufdp,nfirp,hhp,hcp,erb,egb,ewp,ecp,hrb,hab
     Crea una nueva fila en el csv con nuevos datos.
     """
     data = {
-            'Best Reward' :   [0],
+            'Best Reward' :   [0.0],
             'Generations' :     [0],
-            'UFDB' :            [ufdb],
-            'FEB' :             [feb],
-            'FFB' :             [ffb],
-            'HGB' :             [hgb],
-            'NUFDP' :           [nufdp],
-            'NFIRP' :           [nfirp],
-            'HHP' :             [hhp],
-            'HCP' :             [hcp],
+            'UFDB' :            [f"{ufdb:.2f}"],
+            'FEB' :             [f"{feb:.2f}"],
+            'FFB' :             [f"{ffb:.2f}"],
+            'HGB' :             [f"{hgb:.2f}"],
+            'NUFDP' :           [f"{nufdp:.2f}"],
+            'NFIRP' :           [f"{nfirp:.2f}"],
+            'HHP' :             [f"{hhp:.2f}"],
+            'HCP' :             [f"{hcp:.2f}"],
             '-' :               ["-"],
-            'ERB' :             [erb],
-            'EGB' :             [egb],
-            'EWP' :             [ewp],
-            'ECP' :             [ecp],
+            'ERB' :             [f"{erb:.2f}"],
+            'EGB' :             [f"{egb:.2f}"],
+            'EWP' :             [f"{ewp:.2f}"],
+            'ECP' :             [f"{ecp:.2f}"],
             '--' :              ["-"],
-            'HRB' :             [hrb],
-            'HAB' :             [hab],
-            'HGB2' :            [hgb2],
-            'HLP' :             [hlp],
-            'HWP' :             [hwp],
-            'HCP2' :            [hcp2],
-            'DP' :              [dp],
+            'HRB' :             [f"{hrb:.2f}"],
+            'HAB' :             [f"{hab:.2f}"],
+            'HGB2' :            [f"{hgb2:.2f}"],
+            'HLP' :             [f"{hlp:.2f}"],
+            'HWP' :             [f"{hwp:.2f}"],
+            'HCP2' :            [f"{hcp2:.2f}"],
+            'DP' :              [f"{dp:.2f}"],
             '---' :             ["-"],
-            'CDB' :             [cdb],
-            'ABB' :             [abb],
-            'BP' :              [bp],
-            'CP' :              [cp],
-            'RPP' :             [rpp]
+            'CDB' :             [f"{cdb:.2f}"],
+            'ABB' :             [f"{abb:.2f}"],
+            'BP' :              [f"{bp:.2f}"],
+            'CP' :              [f"{cp:.2f}"],
+            'RPP' :             [f"{rpp:.2f}"]
         }
     df = pd.DataFrame(data)
     df.to_csv(CSV_PATH, mode="a", header=False)
@@ -126,7 +126,7 @@ def update_gen_and_rewards_data(genetation, best_reward):
     """
     df = pd.read_csv(CSV_PATH)
 
-    df.at[df.index[-1], "Best Reward"] = best_reward
+    df.at[df.index[-1], "Best Reward"] = f"{best_reward:.2f}"
     df.at[df.index[-1], "Generations"] = genetation
     
     df.to_csv(CSV_PATH, index= False)

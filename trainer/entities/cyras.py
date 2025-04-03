@@ -5,12 +5,13 @@ from enums.health_states import HealthStates
 from enums.hunger_states import HungerStates
 from enums.energy_states import EnergyStates
 from enums.object_types import ObjectTypes
-from config.general_config import WINDOWS_WIDTH, WINDOWS_HEIGHT
+from config.general_config import WINDOWS_WIDTH, WINDOWS_HEIGHT, FIRST_CYRA_COLOR, TWO_CYRA_COLOR
 
 class Cyra:
-    def __init__(self, pos):
+    def __init__(self, pos, id):
         # --- Configuracion de Cyra
         self.obj_type = ObjectTypes.CYRA
+        self.cyra_id = id
         
         # --- Posicion
         self.pos = pygame.math.Vector2(pos)                 # Copia de la posicion inicial
@@ -83,7 +84,7 @@ class Cyra:
         
         # ** Calcular distancias al borde y al alimento antes de moverse **
         old_dist_border = min(self.pos.x, WINDOWS_WIDTH - self.pos.x,
-                              self.pos.y, WINDOWS_HEIGHT - self.pos.y)
+                            self.pos.y, WINDOWS_HEIGHT - self.pos.y)
         
         # ** Actualiza la salud del cyra **
         self.update_health()
@@ -276,8 +277,9 @@ class Cyra:
             new_direction.scale_to_length(self.max_speed)
             magnitude = self.max_speed # Fija la magnitud a la velocidad maxima permitida
         
-        # Actualiza la posicion
-        self.pos += new_direction
+        if self.health_state != HealthStates.DEAD:
+            # Actualiza la posicion
+            self.pos += new_direction
         
         # Control de bordes
         self.pos.x = max(0, min(self.pos.x, WINDOWS_WIDTH))
@@ -414,4 +416,13 @@ class Cyra:
         """
         Dibuja al cyras en pantalla como un círculo azul.
         """
-        pygame.draw.circle(screen, (0, 0, 255), (int(self.pos.x), int(self.pos.y)), 10)
+        pygame.draw.circle(screen, TWO_CYRA_COLOR, (int(self.pos.x), int(self.pos.y)), 18)
+        pygame.draw.circle(screen, FIRST_CYRA_COLOR, (int(self.pos.x), int(self.pos.y)), 15)
+        
+        
+        font = pygame.font.SysFont("comic sans ms", 25)
+        label = font.render(f"{self.cyra_id}",10,TWO_CYRA_COLOR)
+        
+        label_x = self.pos.x  - label.get_width() / 2
+        label_y = self.pos.y - label.get_height() / 2
+        screen.blit(label, (label_x, label_y))
