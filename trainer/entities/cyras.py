@@ -152,13 +152,13 @@ class Cyra:
             self.health_action = HealthActions.RECOVE
         else:
             self.health_action = HealthActions.ANY
-        
+
         # Actualiza es estado actual de la salud
         if self.health <= 0.0:
             self.health_state = HealthStates.DEAD
-        if self.health <= self.max_cant_health:
+        if self.health < self.max_cant_health:
             self.health_state = HealthStates.CRITIC
-        elif self.health <= self.min_cant_health:
+        elif self.health < self.min_cant_health:
             self.health_state = HealthStates.WOUNDED
         else:
             self.health_state = HealthStates.GOOD
@@ -277,7 +277,7 @@ class Cyra:
             new_direction.scale_to_length(self.max_speed)
             magnitude = self.max_speed # Fija la magnitud a la velocidad maxima permitida
         
-        if self.health_state != HealthStates.DEAD:
+        if not self.health <= 0.0:
             # Actualiza la posicion
             self.pos += new_direction
         

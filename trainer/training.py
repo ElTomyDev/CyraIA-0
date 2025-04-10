@@ -1,5 +1,6 @@
 import pygame
 import os
+import numpy as np
 from cyra_ai.env.environment import Environment
 from cyra_ai.agent.agent import Agent
 from config.trainer_config import *
@@ -37,12 +38,12 @@ class Train:
         Se reutiliza el objeto Environment y se acumulan recompensas de cada episodio.
         Retorna la recompensa promedio por agente para la generación.
         """
-        total_rewards = [0.0 for _ in range(NUM_AGENTS)]
+        total_rewards = np.zeros(NUM_AGENTS)
         for episode in range(NUM_EPISODES):
             self.view.process_events()
             
             states = self.env.reset() # Reposiciona a todos los cyras y actualiza la comida
-            episode_rewards = [0.0 for _ in range(NUM_AGENTS)]
+            episode_rewards = np.zeros(NUM_AGENTS)
             
             # Actualiza la pantalla al inicio de cada episodio
             pygame.display.flip()
@@ -68,7 +69,7 @@ class Train:
                     self.view.clock.tick(FPS)
                 
                 # Actualiza los valores de las graficas
-                healths, energys, hungers = self.get_cyras_status()
+                healths, energys, hungers = self.get_cyras_status(self.env)
                 self.train_graphics.update_graph_data(episode_rewards, healths, energys, hungers, self.view.generation, episode, step)
                 
                 if done:
@@ -80,19 +81,17 @@ class Train:
                 agent.learn()
             
             # Acumula las recompensas de este episodio para cada agente
-            for i in range(NUM_AGENTS):
-                total_rewards[i] += episode_rewards[i]
-            
-        avg_reward = [total / NUM_EPISODES for total in total_rewards]
+            total_rewards += episode_rewards
+        
         update_gen_and_rewards_data(self.view.generation, self.best_reward)
-        return avg_reward
+        return total_rewards / NUM_EPISODES
     
     def evaluate_agents(self):
         """
         Evalúa a los agentes en modo de prueba (sin aprendizaje) usando el entorno.
         Retorna una lista con la recompensa promedio de cada agente.
         """
-        total_rewards = [0.0 for _ in range(NUM_AGENTS)]
+        total_rewards = np.zeros(NUM_AGENTS)
         
         # Poner a todos los agentes en modo evaluacion
         for agent in self.agents:
@@ -104,8 +103,7 @@ class Train:
             for step in range(MAX_STEPS):
                 actions = [agent.select_action(states[i]) for i, agent in enumerate(self.agents)]
                 next_states, rewards, done = self.env.step(actions)
-                for i in range(NUM_AGENTS):
-                    total_rewards[i] += rewards[i]
+                total_rewards += rewards
                 states = next_states
                 if done:
                     break
@@ -120,8 +118,8 @@ class Train:
             agent.values = []
             agent.rewards = []
         
-        avg_rewards = [total / NUM_EPISODES for total in total_rewards]
-        return avg_rewards
+        avg_rewards = total_rewards / NUM_EPISODES 
+        return total_rewards / NUM_EPISODES 
     
     # -------------------
     # FUNCIONES DE GUARDADO/CARGA DEL MODELO
@@ -142,7 +140,7 @@ class Train:
         guarda su modelo.
         """
         # Seleccionamos el agente con la mejor recompensa de evaluación
-        best_index = max(range(NUM_AGENTS), key=lambda i: avg_rewards[i])
+        best_index = int(np.argmax(avg_rewards))
         best_reward = avg_rewards[best_index]
         print(f"Mejor agente: {best_index} con recompensa: {best_reward:.2f}")
         
@@ -158,15 +156,13 @@ class Train:
     # -------------------------------------------------------------
     # FUNCIONES PARA OBTENER INFORMACION DE LOS CYRAS Y LOS AGENTES
     # -------------------------------------------------------------
-    def get_cyras_status(self):
+    @staticmethod
+    def get_cyras_status(env):
         """
         Obtiene la salud, energia y hambre de todos los cyras.
         """
-        health_list = []
-        energy_list = []
-        hunger_list = []
-        for cyra in self.env.cyras:
-            health_list.append(cyra.health)
-            energy_list.append(cyra.energy)
-            hunger_list.append(cyra.hunger)
+        health_list = [cyra.health for cyra in env.cyras]
+        energy_list = [cyra.energy for cyra in env.cyras]
+        hunger_list = [cyra.hunger for cyra in env.cyras]
+        
         return health_list, energy_list, hunger_list
