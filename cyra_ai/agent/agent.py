@@ -1,5 +1,6 @@
 import torch
 import torch.optim as optim
+import numpy as np
 from torch.optim import lr_scheduler
 from cyra_ai.models.actor import Actor
 from cyra_ai.models.critic import Critic
@@ -33,7 +34,9 @@ class Agent:
         También almacena el log_prob y la entropía de la distribución para regular la exploración.
         """
         # Converte el estado a un tensor de tipo float32 y lo preparamos para pasar al modelo
-        state = torch.tensor(state, dtype=torch.float32).clone().unsqueeze(0) # Añade una dimensión extra para lotes de tamaño 1
+        state = np.asarray(state, dtype=np.float32)
+        state = torch.from_numpy(state).unsqueeze(0) # Añade una dimensión extra para lotes de tamaño 1
+        
         action_mean = self.actor(state) # El actor genera una media para la distribución de las acciones
         std = torch.tensor([self.exploration_rate, self.exploration_rate, self.exploration_rate]) # Desviación estándar para la distribución (controla exploración)
         
@@ -68,11 +71,7 @@ class Agent:
         Calcula retornos y ventajas, normaliza, y aplica regularización por entropía.
         """
         # Calcula las recompensas descontadas (retornos)
-        discounted_rewards = [] # Lista para almacenar las recompensas descontadas
-        R = 0 # Variable para acumular las recompensas futuras
-        for r in self.rewards[::-1]: # Itera desde el final de las recompensass
-            R = r + self.gamma * R # Calcula la recompensa descontada
-            discounted_rewards.insert(0, R) # Inserta al principio de la lista
+        discounted_rewards = self.discount_rewards(self.rewards, self.gamma)
         
         # Convierte las recompensas descontadas a un tensor y las normaliza
         discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float32)
@@ -83,7 +82,9 @@ class Agent:
         values = torch.stack(self.values).squeeze() # Apila los valores del crítico y eliminamos dimensiones innecesarias
         
         # Calcular ventaja: diferencia entre retorno observado y valor estimado
-        advantages = discounted_rewards - values
+        advantages = discounted_rewards.numpy() - values.detach().numpy()
+        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+        advantages = torch.tensor(advantages, dtype=torch.float32)
 
         # Calculsa la bonificación de entropía para incentivar la exploración
         entropy_bonus = torch.stack(self.entropies).mean() # Promediamos las entropías
@@ -111,6 +112,15 @@ class Agent:
         self.scheduler.step()
         # Reducimos la tasa de exploración después de cada paso de entrenamiento
         self.decay_exploration()
+    
+    def discount_rewards(self, rewards, gamma):
+        rewards = np.array(rewards, dtype=np.float32)
+        discounted = np.zeros_like(rewards)
+        running_add = 0
+        for t in reversed(range(len(rewards))):
+            running_add = rewards[t] + gamma * running_add
+            discounted[t] = running_add
+        return discounted
     
     def decay_exploration(self, decay_rate=0.99, min_rate=0.1):
         """

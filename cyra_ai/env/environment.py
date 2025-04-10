@@ -9,6 +9,7 @@ from enums.hunger_states import HungerStates
 from enums.energy_states import EnergyStates
 from graphics_and_data.training_data import create_new_rows
 from config.general_config import BACKGROUND_COLOR
+from config.trainer_config import NUM_AGENTS
 
 
 class Environment:
@@ -16,12 +17,11 @@ class Environment:
         
         self.screen = screen
         self.screen_width, self.screen_height = self.screen.get_size()
-        self.num_cyras = num_cyras  # Cantidad de cyras
         
         self.random_pos = (random.randint(0, self.screen_width), random.randint(0, self.screen_height)) # Direccion random
         
         # Lista de agentes (cyras) y la comida
-        self.cyras = [Cyra(pygame.math.Vector2(self.random_pos), i) for i in range(self.num_cyras)]
+        self.cyras = [Cyra(pygame.Vector2(random.randint(0, self.screen_width), random.randint(0, self.screen_height)), i) for i in range(NUM_AGENTS)]
         self.food = [Food() for _ in range(10)]
         self.all_objects = []
         
@@ -29,7 +29,7 @@ class Environment:
         self.cant_deads = 0 # Cantidad de cyras muertos
         
         # ---------- Umbrales ----------
-        self.eat_threshold = 25.0                  # Umbral para considerar que se "come" la comida
+        self.eat_threshold = 30.0                  # Umbral para considerar que se "come" la comida
         self.angle_threshold = math.radians(15.0)  # Umbral para considerar bonus por girar
         self.corner_threshold = 20.0               # Umbral de esquina para otorgar penalizacion
         self.max_repeat_position = 3               # Maximas posiciones repetidas permitidas; si aumenta, se penaliza
@@ -71,7 +71,7 @@ class Environment:
         self.dead_penalty = 0.0              # Penalizacion si muere
         
         # Recompensas y Penalizaciones de la Pocicion y Direccion
-        self.enable_pos_and_dir_rewards = True   # Habilita o desabilita las recompensas y penalizaciones de las direcciones y posiciones
+        self.enable_pos_and_dir_rewards = False   # Habilita o desabilita las recompensas y penalizaciones de las direcciones y posiciones
         
         self.change_direction_bonus = 0.0        # Bonus por cambiar de direccion
         self.away_border_bonus = 0.0             # Bonus por alejarse de la pared
@@ -219,7 +219,7 @@ class Environment:
             self.reward += self.health_any_bonus
             
         # ** Recompensas y penalizaciones en base al estado de la salud **
-        if cyra.health_state == HealthStates.DEAD:
+        if cyra.health <= 0.0:
             self.reward -= self.dead_penalty
         elif cyra.health_state == HealthStates.CRITIC:
             self.reward -= self.health_critic_penalty

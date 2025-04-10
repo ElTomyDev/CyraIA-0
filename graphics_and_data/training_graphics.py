@@ -1,5 +1,6 @@
 import plotly.graph_objects as go
 import plotly.io as pio
+import numpy as np
 import dash
 import threading
 from dash import dcc, html
@@ -9,14 +10,16 @@ from config.trainer_config import NUM_AGENTS, MAX_STEPS, NUM_EPISODES
 
 class TrainGraphics:
     def __init__(self):
-        self.rewards_list = [0 for _ in range(NUM_AGENTS)]  # Lista de recompensas de los agentes
-        self.health_list = [0 for _ in range(NUM_AGENTS)] # Lista para la salud de los agentes
-        self.energy_list = [0 for _ in range(NUM_AGENTS)] # Lista para la energia de los agentes
-        self.hunger_list = [0 for _ in range(NUM_AGENTS)] # Lista para el hambre de los agentes
+        self.rewards_list = np.zeros(NUM_AGENTS)  # Lista de recompensas de los agentes
+        self.health_list = np.zeros(NUM_AGENTS)   # Lista para la salud de los agentes
+        self.energy_list = np.zeros(NUM_AGENTS)   # Lista para la energia de los agentes
+        self.hunger_list = np.zeros(NUM_AGENTS)   # Lista para el hambre de los agentes
         
         self.generation = 0
         self.episode = 0
         self.step = 0
+        
+        self.agents_labels = np.array([f"Agente {i}" for i in range(NUM_AGENTS)])
         
         # Inicializa y configura Dash para actualizacion automatica
         self.app = dash.Dash(__name__)
@@ -58,7 +61,7 @@ class TrainGraphics:
         Crea el gráfico actualizado con las recompensas de los agentes
         """
         fig = go.Figure()
-        fig.add_trace(go.Bar(x=[f"Agente {i}" for i in range(NUM_AGENTS)], y=self.rewards_list))
+        fig.add_trace(go.Bar(x=self.agents_labels, y=self.rewards_list.tolist()))
         fig.update_layout(
             title="Agentes y sus recompensas totales",
             xaxis_title="Agentes",
@@ -76,9 +79,9 @@ class TrainGraphics:
         fig = go.Figure()
 
         # Agregar barras para cada estado
-        fig.add_trace(go.Bar(name="Salud", x=[f"Agente {i}" for i in range(NUM_AGENTS)], y=self.health_list, marker_color="green"))
-        fig.add_trace(go.Bar(name="Energía", x=[f"Agente {i}" for i in range(NUM_AGENTS)], y=self.energy_list, marker_color="blue"))
-        fig.add_trace(go.Bar(name="Hambre", x=[f"Agente {i}" for i in range(NUM_AGENTS)], y=self.hunger_list, marker_color="red"))
+        fig.add_trace(go.Bar(name="Salud", x=self.agents_labels, y=self.health_list, marker_color="green"))
+        fig.add_trace(go.Bar(name="Energía", x=self.agents_labels, y=self.energy_list, marker_color="blue"))
+        fig.add_trace(go.Bar(name="Hambre", x=self.agents_labels, y=self.hunger_list, marker_color="red"))
 
         fig.update_layout(
             title="Estado de los Agentes",
@@ -104,22 +107,20 @@ class TrainGraphics:
         """
         Redibuja los gráficos con los datos actualizados.
         """
-        graph_rewards = self.create_reawrds_agent_graph_bar()
-        graph_status = self.create_status_graph_bar()
-        
-        generation, episode, step = self.create_training_info()
-
-        return graph_rewards, graph_status, generation, episode, step
+        return (
+            self.create_reawrds_agent_graph_bar(),
+            self.create_status_graph_bar(),
+            *self.create_training_info()
+        )
     
     def update_graph_data(self, rewards_list, health_list, energy_list, hunger_list, generation, episode, step):
         """
         Actualiza las recompensas de los agentes en el gráfico
         """
-        self.rewards_list = rewards_list  # Se actualiza la lista de recompensas en tiempo real
-        
-        self.health_list = health_list
-        self.energy_list = energy_list
-        self.hunger_list = hunger_list
+        self.rewards_list = np.array(rewards_list)  # Se actualiza la lista de recompensas en tiempo real
+        self.health_list = np.array(health_list)
+        self.energy_list = np.array(energy_list)
+        self.hunger_list = np.array(hunger_list)
         
         self.generation = generation
         self.episode = episode
