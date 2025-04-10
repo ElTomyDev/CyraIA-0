@@ -358,7 +358,7 @@ class Cyra:
             El objeto comida más cercano o None si la lista está vacía.
         """
         if not self.food_objects:
-            return pygame.Vector(0.0, 0.0)
+            return pygame.Vector2(0.0, 0.0)
         
         # Convierte las posiciones de comida en arrays de Numpy
         food_positions = np.array([[food.pos.x, food.pos.y] for food in self.food_objects])
