@@ -1,5 +1,6 @@
 import pygame
 import random
+import numpy as np
 from enums.health_actions import HealthActions
 from enums.health_states import HealthStates
 from enums.hunger_states import HungerStates
@@ -14,10 +15,10 @@ class Cyra:
         self.cyra_id = id
         
         # --- Posicion
-        self.pos = pygame.math.Vector2(pos)                 # Copia de la posicion inicial
-        self.prev_direction = pygame.Vector2(self.pos)      # Direccion previa del movimiento
-        self.prev_positions = []                            # Ultimas (max_prev_positions) posiciones
-        self.max_prev_positions = 5                         # Cantidad de posiciones a guardar en la lista (prev_positions)
+        self.pos = pygame.Vector2(pos)                              # Copia de la posicion inicial
+        self.prev_direction = pygame.Vector2(self.pos)              # Direccion previa del movimiento
+        self.max_prev_positions = 5                                 # Cantidad de posiciones a guardar en la lista (prev_positions)
+        self.prev_positions = np.zeros((self.max_prev_positions,2)) # Ultimas (max_prev_positions) posiciones
         
         # --- Velocidad
         self.max_speed = 5                                  # Velocidad maxima permitida
@@ -151,13 +152,13 @@ class Cyra:
             self.health_action = HealthActions.RECOVE
         else:
             self.health_action = HealthActions.ANY
-        
+
         # Actualiza es estado actual de la salud
         if self.health <= 0.0:
             self.health_state = HealthStates.DEAD
-        if self.health <= self.max_cant_health:
+        if self.health < self.max_cant_health:
             self.health_state = HealthStates.CRITIC
-        elif self.health <= self.min_cant_health:
+        elif self.health < self.min_cant_health:
             self.health_state = HealthStates.WOUNDED
         else:
             self.health_state = HealthStates.GOOD
@@ -236,10 +237,9 @@ class Cyra:
         """
         Actualiza la lista de sus ultimas posiciones
         """
-        rounded_pos = (round(position.x, 1), round(position.y, 1))
-        self.prev_positions.append(rounded_pos)
-        if len(self.prev_positions) > self.max_prev_positions:
-            self.prev_positions.pop(0)
+        new_pos = np.array([round(position.x, 1), round(position.y, 1)])
+        self.prev_positions = np.roll(self.prev_positions, -1, axis=0)
+        self.prev_positions[-1] = new_pos
 
     # ---------------------------
     # FUNCIONES PARA LAS ACCIONES
@@ -261,10 +261,10 @@ class Cyra:
             magnitude (float): La magnitud (velocidad) del movimiento actual.
         """
         # Reduce la velocidad maxima si tiene poca energia
-        if self.energy <= self.max_energy_threshold:
+        """if self.energy <= self.max_energy_threshold:
             self.max_speed = 1
         else:
-            self.max_speed = 5
+            self.max_speed = 5"""
         
         # Crea el vector base a partir de dx y dy
         base_direction = pygame.Vector2(dx, dy)
@@ -277,7 +277,7 @@ class Cyra:
             new_direction.scale_to_length(self.max_speed)
             magnitude = self.max_speed # Fija la magnitud a la velocidad maxima permitida
         
-        if self.health_state != HealthStates.DEAD:
+        if not self.health <= 0.0:
             # Actualiza la posicion
             self.pos += new_direction
         
@@ -357,12 +357,18 @@ class Cyra:
         Retorna:
             El objeto comida más cercano o None si la lista está vacía.
         """
-        if len(self.food_objects) >= 1:
-            # Calcula la comida más cercana usando la función min y la distancia entre posiciones.
-            nearest_food = min(self.food_objects, key=lambda food: self.pos.distance_to(food.pos))
-            return pygame.Vector2(nearest_food.pos.x, nearest_food.pos.y)
-        else:
+        if not self.food_objects:
             return pygame.Vector2(0.0, 0.0)
+        
+        # Convierte las posiciones de comida en arrays de Numpy
+        food_positions = np.array([[food.pos.x, food.pos.y] for food in self.food_objects])
+        cyra_pos = np.array([self.pos.x, self.pos.y])
+        
+        distances = np.linalg.norm(food_positions - cyra_pos, axis=1)
+        ind = np.argmin(distances)
+        nearest_food = food_positions[ind]
+        
+        return pygame.Vector2(nearest_food[0], nearest_food[1])
     
     # ---------------
     # OTRAS FUNCIONES
