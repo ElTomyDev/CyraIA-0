@@ -274,13 +274,13 @@ class Environment:
         y = 1.0
         
         # Recompensas y Penalizaciones de la Comida y el Hambre
-        self.upgrade_food_dist_bonus = random.uniform(x, y)         
-        self.food_eat_bonus = random.uniform(x, y)
+        self.upgrade_food_dist_bonus = random.uniform(0.6, y)         
+        self.food_eat_bonus = random.uniform(0.7, y)
         self.food_found_bonus = random.uniform(x, y)         
         self.hunger_good_bonus = random.uniform(x, y)       
         
         self.no_upgrade_food_dist_penalty = random.uniform(x, y)    
-        self.no_food_in_range_penalty = random.uniform(x, y)
+        self.no_food_in_range_penalty = random.uniform(0.2, y)
         self.hunger_hungry_penalty = random.uniform(x, y)
         self.hunger_critic_penalty = random.uniform(x, y)  
         
