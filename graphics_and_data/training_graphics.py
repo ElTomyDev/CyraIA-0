@@ -50,6 +50,7 @@ class TrainGraphics:
             return self.draw_graphs()
         
         # Hilo para correr Dash
+        #self.run_dash()
         self.dash_thread = threading.Thread(target=self.run_dash, daemon=True)
         self.dash_thread.start()
     

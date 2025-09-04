@@ -6,7 +6,7 @@ from cyra_ai.models.actor import Actor
 from cyra_ai.models.critic import Critic
 
 class Agent:
-    def __init__(self, input_size=29, output_size=3, gamma=0.99):
+    def __init__(self, input_size=31, output_size=3, gamma=0.99) -> None:
         # Inicializamos el actor (política) y el crítico (valor), usando las clases Actor y Critic
         self.actor = Actor(input_size, output_size) # Actor toma el tamaño de la entrada y el número de acciones posibles
         self.critic = Critic(input_size) # Critic toma solo el tamaño de la entrada (estado)
@@ -26,7 +26,7 @@ class Agent:
         self.entropies = [] # Almacena la entropía de las acciones
         self.values = [] # Almacena los valores estimados por el crítico
         self.rewards = [] # Almacena las recompensas obtenidas
-        self.exploration_rate = 5.5 # Tasa de exploración inicial, controla la aleatoriedad de las acciones
+        self.exploration_rate = 1.0 # Tasa de exploración inicial, controla la aleatoriedad de las acciones
     
     def select_action(self, state):
         """
@@ -70,48 +70,44 @@ class Agent:
         Actualiza la política y el critic usando Actor-Critic.
         Calcula retornos y ventajas, normaliza, y aplica regularización por entropía.
         """
-        # Calcula las recompensas descontadas (retornos)
-        discounted_rewards = self.discount_rewards(self.rewards, self.gamma)
-        
-        # Convierte las recompensas descontadas a un tensor y las normaliza
-        discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float32)
-        discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-8) # Normalización para estabilidad
-        
-        # Convertimos los buffers a tensores para poder usarlos en las funciones de pérdida
-        log_probs = torch.stack(self.log_probs) # Apila las probabilidades logarítmicas de las acciones
-        values = torch.stack(self.values).squeeze() # Apila los valores del crítico y eliminamos dimensiones innecesarias
-        
-        # Calcular ventaja: diferencia entre retorno observado y valor estimado
-        advantages = discounted_rewards.numpy() - values.detach().numpy()
-        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
-        advantages = torch.tensor(advantages, dtype=torch.float32)
+        # Calcular retornos
+        returns = self.discount_rewards(self.rewards, self.gamma)
+        returns = torch.tensor(returns, dtype=torch.float32)
 
-        # Calculsa la bonificación de entropía para incentivar la exploración
-        entropy_bonus = torch.stack(self.entropies).mean() # Promediamos las entropías
-        beta = 0.01  # Coeficiente para la penalización de la entropía
-        
-        # Calcular perdidas
-        actor_loss = - (log_probs * advantages.detach()).mean() - beta * entropy_bonus # Pérdida del actor
-        critic_loss = advantages.pow(2).mean() # Pérdida del crítico
-        total_loss = actor_loss + critic_loss # Pérdida total combinando ambas pérdidas
-        
-        # Optimizacion del modelo
-        self.actor_optimizer.zero_grad() # Resetea los gradientes del optimizador del actor
-        self.critic_optimizer.zero_grad() # Resetea los gradientes del optimizador del crítico
-        total_loss.backward() # Calcula los gradientes de la pérdida total
-        self.actor_optimizer.step() # Actualiza los parámetros del actor
-        self.critic_optimizer.step() # Actualiza los parámetros del crítico
-        
-        # Limpiamos los buffers para preparar para el siguiente paso
-        self.log_probs = []
-        self.entropies = []
-        self.values = []
-        self.rewards = []
-        
-        # Ajustamos la tasa de aprendizaje con el scheduler
+        # Convertir buffers a tensores
+        log_probs = torch.stack(self.log_probs)
+        values = torch.stack(self.values).squeeze()
+
+        # Calcular ventajas
+        advantages = returns - values.detach()
+        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
+        # Entropía
+        entropy_bonus = torch.stack(self.entropies).mean()
+        beta = 0.01
+
+        # Pérdidas
+        actor_loss = -(log_probs * advantages).mean() - beta * entropy_bonus
+        critic_loss = (returns - values).pow(2).mean()
+        total_loss = actor_loss + critic_loss
+
+        # Optimización
+        self.actor_optimizer.zero_grad()
+        self.critic_optimizer.zero_grad()
+        total_loss.backward()
+        self.actor_optimizer.step()
+        self.critic_optimizer.step()
+
+        # Limpiar buffers
+        self.log_probs.clear()
+        self.entropies.clear()
+        self.values.clear()
+        self.rewards.clear()
+
+        # Ajustes dinámicos
         self.scheduler.step()
-        # Reducimos la tasa de exploración después de cada paso de entrenamiento
         self.decay_exploration()
+
     
     def discount_rewards(self, rewards, gamma):
         rewards = np.array(rewards, dtype=np.float32)
@@ -122,7 +118,7 @@ class Agent:
             discounted[t] = running_add
         return discounted
     
-    def decay_exploration(self, decay_rate=0.99, min_rate=0.1):
+    def decay_exploration(self, decay_rate=0.995, min_rate=0.1):
         """
         Disminuye la tasa de exploración de forma multiplicativa hasta un valor mínimo.
         """

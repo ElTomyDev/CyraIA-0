@@ -9,7 +9,7 @@ from enums.object_types import ObjectTypes
 from config.general_config import WINDOWS_WIDTH, WINDOWS_HEIGHT, FIRST_CYRA_COLOR, TWO_CYRA_COLOR
 
 class Cyra:
-    def __init__(self, pos, id):
+    def __init__(self, pos, id) -> None:
         # --- Configuracion de Cyra
         self.obj_type = ObjectTypes.CYRA
         self.cyra_id = id
@@ -403,29 +403,85 @@ class Cyra:
         Returns:
             list: [x, y, hunger, last_speed, prev_direction, energy, max_energy, max_speed]
         """
-        return [self.pos.x,
-                self.pos.y,
-                self.hunger,
-                self.max_hunger,
-                self.energy,
-                self.max_energy,
-                self.health,
-                self.max_health,
-                self.health_action.value,
-                self.health_state.value,
-                self.energy_state.value,
-                self.hunger_state.value,
-                self.last_speed,
-                self.max_speed]
+        # Normalizacion continua
+        hunger_norm = self.hunger / self.max_hunger
+        energy_norm = self.energy / self.max_energy
+        health_norm = self.health / self.max_health
+        
+        pos_x_norm = self.pos.x / WINDOWS_WIDTH
+        pos_y_norm = self.pos.y / WINDOWS_HEIGHT
+        speed_norm = self.last_speed / (self.max_speed if self.max_speed > 0 else 1)
+        
+        # One-hot para estados discretos
+        # Hambre (3 estados)
+        hunger_onehot = [0, 0, 0]
+        hunger_onehot[self.hunger_state.value] = 1
+
+        # Energía (3 estados)
+        energy_onehot = [0, 0, 0]
+        energy_onehot[self.energy_state.value] = 1
+
+        # Salud (4 estados: GOOD, WOUNDED, CRITIC, DEAD)
+        health_onehot = [0, 0, 0, 0]
+        health_onehot[self.health_state.value] = 1
+        
+        
+        return [pos_x_norm,
+                pos_y_norm,
+                hunger_norm,
+                energy_norm,
+                health_norm,
+                speed_norm] + hunger_onehot + energy_onehot + health_onehot
     
     def draw(self, screen):
         """
         Dibuja al cyras en pantalla como un círculo azul.
         """
+        # -----------------------------
+        # --- DIBUJA CUERPO DE CYRA ---
+        # -----------------------------
         pygame.draw.circle(screen, TWO_CYRA_COLOR, (int(self.pos.x), int(self.pos.y)), 18)
         pygame.draw.circle(screen, FIRST_CYRA_COLOR, (int(self.pos.x), int(self.pos.y)), 15)
         
+        # ------------------------------
+        # --- DIBUJA BARRAS DE STATS --- 
+        # ------------------------------
+        bar_x_pos = int(self.pos.x)-10
+        health_bar_y_pos = int(self.pos.y)+27
+        hunger_bar_y_pos = int(self.pos.y)+21
+        energy_bar_y_pos = int(self.pos.y)+15
+        #bar_y_relative_pos = (health_bar_y_pos + energy_bar_y_pos + hunger_bar_y_pos) / 3
         
+        bar_background_color = (50, 50, 50)
+        health_bar_color = (255, 0, 0)
+        hunger_bar_color = (255, 164, 32)
+        energy_bar_color = (0, 0, 200)
+        
+        current_health_bar_width = (self.health / self.max_health) * 20
+        current_hunger_bar_width = (self.hunger / self.max_hunger) * 20
+        current_energy_bar_width = (self.energy / self.max_energy) * 20
+        
+        if health_bar_y_pos < WINDOWS_HEIGHT: # Si la barra de vida sale de la pantalla
+            # Barra de energia
+            pygame.draw.rect(screen, bar_background_color, (bar_x_pos, energy_bar_y_pos, 20, 5))
+            pygame.draw.rect(screen, energy_bar_color, (bar_x_pos, energy_bar_y_pos, current_energy_bar_width, 5))
+            # Barra de hambre
+            pygame.draw.rect(screen, bar_background_color, (bar_x_pos, hunger_bar_y_pos, 20, 5))
+            pygame.draw.rect(screen, hunger_bar_color, (bar_x_pos, hunger_bar_y_pos, current_hunger_bar_width, 5))
+            # Barra de vida
+            pygame.draw.rect(screen, bar_background_color, (bar_x_pos, health_bar_y_pos, 20, 5))
+            pygame.draw.rect(screen, health_bar_color, (bar_x_pos, health_bar_y_pos, current_health_bar_width, 5))
+        else:
+            # Barra de energia
+            pygame.draw.rect(screen, bar_background_color, (bar_x_pos, -energy_bar_y_pos, 20, 5))
+            pygame.draw.rect(screen, energy_bar_color, (bar_x_pos, -energy_bar_y_pos, current_energy_bar_width, 5))
+            # Barra de hambre
+            pygame.draw.rect(screen, bar_background_color, (bar_x_pos, -hunger_bar_y_pos, 20, 5))
+            pygame.draw.rect(screen, hunger_bar_color, (bar_x_pos, -hunger_bar_y_pos, current_hunger_bar_width, 5))
+            # Barra de vida
+            pygame.draw.rect(screen, bar_background_color, (bar_x_pos, -health_bar_y_pos, 20, 5))
+            pygame.draw.rect(screen, health_bar_color, (bar_x_pos, -health_bar_y_pos, current_health_bar_width, 5))
+            
         font = pygame.font.SysFont("comic sans ms", 25)
         label = font.render(f"{self.cyra_id}",10,TWO_CYRA_COLOR)
         
