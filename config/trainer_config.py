@@ -1,6 +1,6 @@
+NUM_AGENTS=3 # El numero de agentes (Cyras) que van a entrenarse al mismo tiempo
 
-NUM_AGENTS = 3 # El numero de agentes (Cyras) que van a entrenarse al mismo tiempo
+MAX_STEPS=200 # Numero maximo de pasos que va a tener el entrenamiento
 
-NUM_EPISODES = 1 # Numero maximo de episodios que va a tener el entrenamiento.
-MAX_STEPS = 200 # Numero maximo de pasos que va a tener el entrenamiento
-
+NEW_TRAIN=True
+TRAIN_AGE=1
