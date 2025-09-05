@@ -6,7 +6,7 @@ from trainer.env.environment import Environment
 from trainer.env.rewards_and_penalty import RewardsAndPenalty
 from cyra_ai.agent.agent import Agent
 from config.trainer_config import *
-from config.general_config import BEST_MODEL_PATH, FPS
+from config.general_config import AGENT_BASE_PATH, FPS
 from graphics_and_data.training_data import TrainCsvData
 import copy
 import torch
@@ -23,7 +23,7 @@ class Train:
         self.cyras = [Agent() for _ in range(NUM_AGENTS)]
         
         # Carga el modelo guardado y este existe y evalua para obtener una recompensa base
-        self.load_model_if_exist()
+        self.load_agent_if_exist()
 
     def init_train_values(self) -> None:
         if NEW_TRAIN: # Si es un nuevo entrenamiento
@@ -100,7 +100,7 @@ class Train:
                 self._mutate_agent(clone, mutation_rate=0.05, mutation_std=0.02)
                 new_cyras.append(clone)
         
-        self.save_best_model(best_reward, best_reward_index)
+        self.save_best_agent(best_reward, best_reward_index)
         TrainCsvData.update_gen_and_rewards_data(self.current_age, self.generation, self.best_reward)
         
         self.cyras = new_cyras
@@ -121,15 +121,15 @@ class Train:
     # -------------------
     # FUNCIONES DE GUARDADO/CARGA DEL MODELO
     # -------------------
-    def load_model_if_exist(self) -> None:
+    def load_agent_if_exist(self) -> None:
         """Si existe un modelo guardado, lo carga en todos los agentes y actualiza la mejor recompensa."""
-        if os.path.exists(BEST_MODEL_PATH) and self.is_new_train == False:
+        if os.path.exists(AGENT_BASE_PATH+f"agent_{self.current_age}.pth") and NEW_TRAIN == False:
             for agent in self.cyras:
-                agent.load_model(BEST_MODEL_PATH)
-            #TrainCsvData.update_gen_and_rewards_data(self.current_age, self.generation, self.best_reward)
+                agent.load_model(AGENT_BASE_PATH+f"agent_{self.current_age}.pth")
             print("Mejor modelo cargado")
-    
-    def save_best_model(self, current_best_reward: float, best_reward_index: int) -> None:
+        print("No existe un agente con esa ruta")
+        
+    def save_best_agent(self, current_best_reward: float, best_reward_index: int) -> None:
         if current_best_reward > self.best_reward:
             self.best_reward = current_best_reward
-            self.cyras[best_reward_index].save_model(BEST_MODEL_PATH)
+            self.cyras[best_reward_index].save_model(AGENT_BASE_PATH+f"agent_{self.current_age}.pth")

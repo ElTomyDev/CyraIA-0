@@ -1,3 +1,4 @@
+from typing import Any
 import pygame
 import random
 import numpy as np
@@ -64,7 +65,7 @@ class Cyra:
         self.detected_objects = []                          # Lista de todos los objetos detectados
         self.food_objects = []                              # Lista de comida detectada
     
-    def update_all(self, dx, dy, speed, all_objects):
+    def update_all(self, dx, dy, speed, all_objects) -> Any:
         """
         Se encarga de actualizar todos los parametros y estados del cyra.
         """
@@ -121,19 +122,19 @@ class Cyra:
     # -----------------------
     # FUNCIONES PARA LA SALUD
     # -----------------------
-    def recharge_health(self, cant_recharge):
+    def recharge_health(self, cant_recharge) -> None:
         """
         Recarga la salud, en función del valor recarga.
         """
         self.health = min(self.health + cant_recharge, self.max_health)
     
-    def reduce_health(self, reduce):
+    def reduce_health(self, reduce) -> None:
         """
         Disminuye la cantidad de salud en base a una reduccion 'reduce'.
         """
         self.health = max(self.health - reduce, 0.0)
 
-    def update_health(self):
+    def update_health(self) -> None:
         """
         Disminuye la salud si el hambre sobrepasa el umbral.
         """
@@ -166,20 +167,20 @@ class Cyra:
     # ------------------------
     # FUNCIONES PARA EL HAMBRE
     # ------------------------
-    def increment_hunger(self, movement_distance):
+    def increment_hunger(self, movement_distance) -> None:
         """
         Incrementa el hambre, en función del movimiento.
         """
         move_factor = movement_distance if movement_distance > 0 else 1.0
         self.hunger = min(self.hunger + (self.hunger_increment * move_factor), self.max_hunger)
     
-    def reduce_hunger(self, reduce):
+    def reduce_hunger(self, reduce) -> None:
         """
         Disminuye la cantidad de hambre en base a una reduccion 'reduce'.
         """
         self.hunger = max(self.hunger - reduce, 0.0)
     
-    def update_hunger(self, movement_distance):
+    def update_hunger(self, movement_distance) -> None:
         """
         Actualiza el hambre en funcion del movimiento y tambien actualiza su estado.
         """
@@ -194,7 +195,7 @@ class Cyra:
     # -------------------------
     # FUNCIONES PARA LA ENERGIA
     # -------------------------
-    def reduce_energy(self, movement_distance, decrement):
+    def reduce_energy(self, movement_distance, decrement) -> None:
         """
         Disminuye la energía en función de la distancia movida.
         Por ejemplo, consume 0.05 unidades de energía por cada unidad de movimiento.
@@ -202,13 +203,13 @@ class Cyra:
         move_factor = movement_distance if movement_distance > 0 else 1.0
         self.energy = max(self.energy - (decrement * move_factor), 0.0)
     
-    def recharge_energy(self, cant_recharge):
+    def recharge_energy(self, cant_recharge) -> None:
         """
         Recarga la energía, en función del valor recarga.
         """
         self.energy = min(self.energy + cant_recharge, self.max_energy)
     
-    def update_energy(self, movement_distance):
+    def update_energy(self, movement_distance) -> None:
         """
         Actualiza la perdida de energia en funcion al movimiento y el hambre. Acuatilza tambien
         el estado.
@@ -233,7 +234,7 @@ class Cyra:
     # --------------------------
     # FUNCIONES PARA LA POSICION
     # --------------------------
-    def update_prev_positions(self, position):
+    def update_prev_positions(self, position) -> None:
         """
         Actualiza la lista de sus ultimas posiciones
         """
@@ -244,12 +245,12 @@ class Cyra:
     # ---------------------------
     # FUNCIONES PARA LAS ACCIONES
     # ---------------------------
-    def eat(self, nutrition):
+    def eat(self, nutrition) -> None:
         """Reduce el hambre y aumenta la energia cuando come."""
         self.reduce_hunger(nutrition)
         self.recharge_energy(nutrition)
     
-    def move(self, dx, dy, speed):
+    def move(self, dx, dy, speed) -> Any:
         """
         Mueve al cyra sumándole dx y dy a su posición, 
         aplicando además un factor de speed para modular la velocidad del movimiento,
@@ -294,7 +295,7 @@ class Cyra:
         
         return old_direction, new_direction, magnitude
     
-    def dead(self):
+    def dead(self) -> None:
         """
         Hace que el cyra muera.
         """
@@ -304,13 +305,13 @@ class Cyra:
     # FUNCIONES PARA LAS COLISIONES
     # -----------------------------
     # Detectar objetos
-    def detect_collision_objects(self, obj):
+    def detect_collision_objects(self, obj) -> bool:
         """
         Detecta si un objeto colisiona con el área de detección del Cyra.
         """
         return self.pos.distance_to(obj.pos) <= self.detect_radio
 
-    def update_detection_objects(self, all_objects):
+    def update_detection_objects(self, all_objects) -> None:
         """
         Actualiza la lista de objetos detectados dinámicamente.
         - Si un objeto entra en el área, se agrega.
@@ -324,7 +325,7 @@ class Cyra:
         # Actualizamos la lista
         self.detected_objects = new_detected
     
-    def update_food_objects(self):
+    def update_food_objects(self) -> None:
         """
         Actualiza la lista de objetos que son solo comida.
         """
@@ -338,19 +339,19 @@ class Cyra:
     # ----------------------------------
     # FUNCIONES AUXILIARES E INFORMACION
     # ----------------------------------
-    def cant_food_objects(self):
+    def cant_food_objects(self) -> int:
         """
         Devuelve la cantidad de comida que se detecto
         """
         return len(self.food_objects)
     
-    def cant_detected_objects(self):
+    def cant_detected_objects(self) -> int:
         """
         Devuelve la cantidad de objetos que se detecto
         """
         return len(self.detected_objects)
     
-    def get_nearest_food(self):
+    def get_nearest_food(self) -> pygame.Vector2:
         """
         Retorna el objeto comida más cercano a cyra.
         
@@ -373,7 +374,7 @@ class Cyra:
     # ---------------
     # OTRAS FUNCIONES
     # ---------------
-    def reset(self):
+    def reset(self) -> None:
         """ Reinicia a los cyras """
         # Reinicia los estados
         self.hunger_state = HungerStates.GOOD
@@ -396,7 +397,7 @@ class Cyra:
         self.detected_objects = []
         self.food_objects = []
     
-    def get_state(self):
+    def get_state(self) -> list:
         """
         Retorna el estado completo del cyra, que incluye la posición y el nivel de hambre.
         
@@ -433,7 +434,7 @@ class Cyra:
                 health_norm,
                 speed_norm] + hunger_onehot + energy_onehot + health_onehot
     
-    def draw(self, screen):
+    def draw(self, screen) -> None:
         """
         Dibuja al cyras en pantalla como un círculo azul.
         """
@@ -488,3 +489,4 @@ class Cyra:
         label_x = self.pos.x  - label.get_width() / 2
         label_y = self.pos.y - label.get_height() / 2
         screen.blit(label, (label_x, label_y))
+    

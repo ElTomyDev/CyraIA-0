@@ -4,7 +4,7 @@ WINDOWS_HEIGHT = 700 # Alto de la ventana
 
 FPS = 60 # Frames por segundo
 
-BEST_MODEL_PATH = "./cyraai_models/best_model.pth" # Ruta al mejor modelo actual
+AGENT_BASE_PATH = "./cyraai_models/" # Ruta al mejor modelo actual
 
 # COLORES
 BACKGROUND_COLOR = ( 92, 136, 89 )
