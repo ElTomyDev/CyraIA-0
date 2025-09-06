@@ -1,3 +1,4 @@
+from typing import Any
 import torch
 import torch.optim as optim
 import numpy as np
@@ -6,7 +7,7 @@ from cyra_ai.models.actor import Actor
 from cyra_ai.models.critic import Critic
 
 class Agent:
-    def __init__(self, input_size=31, output_size=3, gamma=0.99) -> None:
+    def __init__(self, input_size=31, output_size=5, gamma=0.99) -> None:
         # Inicializamos el actor (política) y el crítico (valor), usando las clases Actor y Critic
         self.actor = Actor(input_size, output_size) # Actor toma el tamaño de la entrada y el número de acciones posibles
         self.critic = Critic(input_size) # Critic toma solo el tamaño de la entrada (estado)
@@ -28,7 +29,7 @@ class Agent:
         self.rewards = [] # Almacena las recompensas obtenidas
         self.exploration_rate = 1.0 # Tasa de exploración inicial, controla la aleatoriedad de las acciones
     
-    def select_action(self, state):
+    def select_action(self, state) -> list:
         """
         Recibe un estado y devuelve la acción.
         También almacena el log_prob y la entropía de la distribución para regular la exploración.
@@ -38,13 +39,12 @@ class Agent:
         state = torch.from_numpy(state).unsqueeze(0) # Añade una dimensión extra para lotes de tamaño 1
         
         action_mean = self.actor(state) # El actor genera una media para la distribución de las acciones
-        std = torch.tensor([self.exploration_rate, self.exploration_rate, self.exploration_rate]) # Desviación estándar para la distribución (controla exploración)
+        std = torch.ones_like(action_mean) * self.exploration_rate # Desviación estándar para la distribución (controla exploración)
         
         # Creamos una distribución normal con la media y la desviación estándar
         dist = torch.distributions.Normal(action_mean.squeeze(0), std)
-        
-        # Muestra una acción de la distribución normal y calcula el log_prob y la entropía
         action = dist.sample() # Muestra una acción de la distribución normal
+        
         log_prob = dist.log_prob(action).sum() # Calcula el logaritmo de la probabilidad de la acción seleccionada
         entropy = dist.entropy().sum() # Calcula la entropía de la distribución para incentivar la exploración
         
@@ -56,16 +56,21 @@ class Agent:
         value = self.critic(state)
         self.values.append(value)
         
-        # Devuelve la acción en formato NumPy (desacoplada de PyTorch para interactuar con el entorno)
-        return action.detach().numpy().flatten()
+        action_np = action.detach().numpy().flatten()
+        
+        directions = [1 if d > 0 else 0 for d in action_np[:4]] # Obtiene direcciones redondeadas
+        
+        speed = max(0.0, min(abs(action_np[4]), 5.0))
+
+        return [directions, speed]
     
-    def store_reward(self, reward):
+    def store_reward(self, reward) -> None:
         """
         Guarda la recompensa obtenida en un paso.
         """
         self.rewards.append(reward)
 
-    def learn(self):
+    def learn(self) -> None:
         """
         Actualiza la política y el critic usando Actor-Critic.
         Calcula retornos y ventajas, normaliza, y aplica regularización por entropía.
@@ -108,8 +113,7 @@ class Agent:
         self.scheduler.step()
         self.decay_exploration()
 
-    
-    def discount_rewards(self, rewards, gamma):
+    def discount_rewards(self, rewards, gamma) -> np.ndarray:
         rewards = np.array(rewards, dtype=np.float32)
         discounted = np.zeros_like(rewards)
         running_add = 0
@@ -118,20 +122,20 @@ class Agent:
             discounted[t] = running_add
         return discounted
     
-    def decay_exploration(self, decay_rate=0.995, min_rate=0.1):
+    def decay_exploration(self, decay_rate=0.995, min_rate=0.1) -> None:
         """
         Disminuye la tasa de exploración de forma multiplicativa hasta un valor mínimo.
         """
         self.exploration_rate = max(self.exploration_rate * decay_rate, min_rate) # Disminuimos la exploración multiplicativamente
     
-    def save_model(self, path):
+    def save_model(self, path) -> None:
         """Guarda el modelo en el path dado."""
         torch.save({
         'actor_state_dict': self.actor.state_dict(),
         'critic_state_dict': self.critic.state_dict()
         }, path)
 
-    def load_model(self, path):
+    def load_model(self, path) -> None:
         """Carga el modelo desde el path dado."""
         checkpoint = torch.load(path)
         self.actor.load_state_dict(checkpoint['actor_state_dict']) # Carga el estado del actor

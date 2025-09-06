@@ -26,46 +26,38 @@ class Cyra:
         self.last_speed = 0.0                               # Magnitud del ultimo movimiento
         
         # --- Hambre
-        self.hunger = 0.0                                   # Nivel de hambre inicial
-        self.max_hunger = 100.0                             # Maximo nivel de hambre
-        self.hunger_increment = 0.01                        # La cantidad de hambre que se incrementa en cada paso
+        self.hunger = 1.0                                   # Nivel de hambre inicial
+        self.max_hunger = 1.0                               # Maximo nivel de hambre
+        self.hunger_decrement = 0.0001                      # La cantidad de hambre que se incrementa en cada paso
         self.hunger_state = HungerStates.GOOD               # Estado actual del hambre
-        self.min_hunger_threshold = 70.0                    # Umbral minimo para considerarse hambriento
-        self.max_hunger_threshold = 90.0                    # Umbral maximo para estado critico de hambre
+        self.hunger_hungry_threshold = 0.5                  # Umbral minimo para considerarse hambriento
+        self.hunger_crititc_threshold = 0.2                 # Umbral maximo para estado critico de hambre
         
         # --- Energia
-        self.energy = 100.0                                 # Energia inicial
-        self.max_energy = 100.0                             # Energia maxima
-        self.min_energy_loss = 0.01                         # Minima perdida de energia
-        self.max_energy_loss = 0.05                         # Maxima perdida de energia
-        self.min_energy_charge = 2.5                        # Minima carga de energia
-        self.max_energy_charge = 4.0                        # Maxima carga de energia
+        self.energy = 1.0                                   # Energia inicial
+        self.max_energy = 1.0                               # Energia maxima
+        self.energy_decrement = 0.001                       # Perdida de energia
+        self.energy_increment_idle = 0.02                   # carga de energia por estar quieto
         self.energy_state = EnergyStates.GOOD               # Estado actual de la energia
-        self.min_energy_threshold = 40.0                    # Umbral minimo para considerarse cansado
-        self.max_energy_threshold = 20.0                    # Umbral maximo para considerarse muy cansado
+        self.energy_weary_threshold = 0.5                   # Umbral minimo para considerarse cansado
+        self.energy_critic_threshold = 0.2                  # Umbral maximo para considerarse muy cansado
         
         # --- Salud
-        self.health = 100.0                                 # Nivel de salud actual
-        self.max_health = 100.0                             # Maximo nivel de salud
-        self.min_health_charge = 0.2                        # Candidad minima de aumento de salud
-        self.max_health_charge = 0.5                        # Candidad maxima de aumento de salud
-        self.min_health_loss = 0.1                         # Cantidad minima de decremento de salud
-        self.max_health_loss = 0.5                          # Cantidad maxima de decremento de salud
+        self.health = 1.0                                   # Nivel de salud actual
+        self.max_health = 1.0                               # Maximo nivel de salud
+        self.health_decrement = 0.01                        # Incremento de la salud
+        self.health_increment = 0.05                        # Decremento de la salud
         self.health_action = HealthActions.ANY              # Accion actual de la salud
         self.health_state = HealthStates.GOOD               # Estado actual de la salud
-        self.min_health_recovery_hunger = 60.0              # Umbral minimo de hambre para recuperar salud
-        self.max_health_recovery_hunger = 20.0              # Umbral maximo de hambre para recuperar salud
-        self.min_health_loss_hunger = 70.0                  # Umbral minimo de hambre para perder salud
-        self.max_health_loss_hunger = 95.0                  # Umbral maximo de hambre para perder salud
-        self.min_cant_health = 50.0                         # Umbral minimo para considerarse herido
-        self.max_cant_health = 30.0                         # Umbral maximo para considerarse en estado critico
+        self.health_wounded_threshold = 0.5                 # Umbral minimo para considerarse herido
+        self.health_critic_threshold = 0.2                  # Umbral maximo para considerarse en estado critico
         
         # --- Deteccion de objetos
         self.detect_radio = 150.0                           # Radio de deteccion
         self.detected_objects = []                          # Lista de todos los objetos detectados
         self.food_objects = []                              # Lista de comida detectada
     
-    def update_all(self, dx, dy, speed, all_objects) -> Any:
+    def update_all(self, directions, speed, all_objects) -> Any:
         """
         Se encarga de actualizar todos los parametros y estados del cyra.
         """
@@ -96,7 +88,7 @@ class Cyra:
         
         # ---- FUNCIONES ANTES DE MOVERSE ---- <
         
-        old_dir, new_dir, move_speed = self.move(dx, dy, speed) # Mueve al cyra 
+        old_dir, new_dir, move_speed = self.move(directions, speed) # Mueve al cyra 
         
         # ---- FUNCIONES DESPUES DE MOVERSE ---- >
         
@@ -109,7 +101,7 @@ class Cyra:
                             self.pos.y, WINDOWS_HEIGHT - self.pos.y)
         
         # ** Actualiza el hambre en funcion del movimiento ** 
-        self.update_hunger(move_speed)
+        self.update_hunger()
         
         # ** Actualiza la energia del cyra en funcion al movimiento **
         self.update_energy(move_speed)
@@ -138,18 +130,11 @@ class Cyra:
         """
         Disminuye la salud si el hambre sobrepasa el umbral.
         """
-        # Actualiza la salud y la accion actual de la salud
-        if self.hunger >= self.max_health_loss_hunger:
-            self.reduce_health(self.max_health_loss)
+        if self.hunger_state == HungerStates.CRITIC:
+            self.reduce_health(self.health_decrement)
             self.health_action = HealthActions.LOSS
-        elif self.hunger >= self.min_health_loss_hunger:
-            self.reduce_health(self.min_health_loss)
-            self.health_action = HealthActions.LOSS
-        elif self.hunger <= self.max_health_recovery_hunger:
-            self.recharge_health(self.max_health_charge)
-            self.health_action = HealthActions.RECOVE
-        elif self.hunger <= self.min_health_recovery_hunger:
-            self.recharge_health(self.min_health_charge)
+        elif self.hunger_state == HungerStates.GOOD:
+            self.recharge_health(self.health_increment)
             self.health_action = HealthActions.RECOVE
         else:
             self.health_action = HealthActions.ANY
@@ -157,9 +142,9 @@ class Cyra:
         # Actualiza es estado actual de la salud
         if self.health <= 0.0:
             self.health_state = HealthStates.DEAD
-        if self.health < self.max_cant_health:
+        if self.health < self.health_critic_threshold:
             self.health_state = HealthStates.CRITIC
-        elif self.health < self.min_cant_health:
+        elif self.health < self.health_wounded_threshold:
             self.health_state = HealthStates.WOUNDED
         else:
             self.health_state = HealthStates.GOOD
@@ -167,27 +152,29 @@ class Cyra:
     # ------------------------
     # FUNCIONES PARA EL HAMBRE
     # ------------------------
-    def increment_hunger(self, movement_distance) -> None:
+    def reduce_hunger(self) -> None:
         """
         Incrementa el hambre, en función del movimiento.
         """
-        move_factor = movement_distance if movement_distance > 0 else 1.0
-        self.hunger = min(self.hunger + (self.hunger_increment * move_factor), self.max_hunger)
-    
-    def reduce_hunger(self, reduce) -> None:
+        if not self.energy_state == EnergyStates.CRITIC:
+            self.hunger = max(self.hunger - self.hunger_decrement, 0.0)
+            return
+        self.hunger = max(self.hunger - (self.hunger_decrement * 5), 0.0)
+        
+    def recharge_hunger(self, cant_recharge) -> None:
         """
         Disminuye la cantidad de hambre en base a una reduccion 'reduce'.
         """
-        self.hunger = max(self.hunger - reduce, 0.0)
+        self.hunger = min(self.hunger + cant_recharge, self.max_hunger)
     
-    def update_hunger(self, movement_distance) -> None:
+    def update_hunger(self) -> None:
         """
         Actualiza el hambre en funcion del movimiento y tambien actualiza su estado.
         """
-        self.increment_hunger(movement_distance)
-        if self.hunger >= self.max_hunger_threshold:
+        self.reduce_hunger()
+        if self.hunger <= self.hunger_crititc_threshold:
             self.hunger_state = HungerStates.CRITIC
-        elif self.hunger >= self.min_hunger_threshold:
+        elif self.hunger <= self.hunger_hungry_threshold:
             self.hunger_state = HungerStates.HUNGRY
         else:
             self.hunger_state = HungerStates.GOOD
@@ -214,19 +201,17 @@ class Cyra:
         Actualiza la perdida de energia en funcion al movimiento y el hambre. Acuatilza tambien
         el estado.
         """
+        print(movement_distance)
         # Actualiza la energia
-        if movement_distance <= 0:
-            self.recharge_energy(self.max_energy_charge)
-        elif self.hunger_state == HungerStates.HUNGRY or self.hunger_state == HungerStates.GOOD:
-            self.reduce_energy(movement_distance, self.min_energy_loss)
-        elif self.hunger_state == HungerStates.CRITIC:
-            self.reduce_energy(movement_distance, self.max_energy_loss)
-            
-            
+        if movement_distance <= 0.0:
+            self.recharge_energy(self.energy_increment_idle)
+        else:
+            self.reduce_energy(movement_distance, self.energy_decrement) 
+        
         # Actualiza el estado actual de la energia
-        if self.energy <= self.max_energy_threshold:
+        if self.energy <= self.energy_critic_threshold:
             self.energy_state = EnergyStates.CRITIC
-        elif self.energy <= self.min_energy_threshold:
+        elif self.energy <= self.energy_weary_threshold:
             self.energy_state = EnergyStates.WEARY
         else:
             self.energy_state = EnergyStates.GOOD
@@ -247,10 +232,10 @@ class Cyra:
     # ---------------------------
     def eat(self, nutrition) -> None:
         """Reduce el hambre y aumenta la energia cuando come."""
-        self.reduce_hunger(nutrition)
+        self.recharge_hunger(nutrition)
         self.recharge_energy(nutrition)
     
-    def move(self, dx, dy, speed) -> Any:
+    def move(self, directions, speed) -> Any:
         """
         Mueve al cyra sumándole dx y dy a su posición, 
         aplicando además un factor de speed para modular la velocidad del movimiento,
@@ -261,38 +246,33 @@ class Cyra:
             new_direction (pygame.Vector2): El vector de movimiento actual.
             magnitude (float): La magnitud (velocidad) del movimiento actual.
         """
-        # Reduce la velocidad maxima si tiene poca energia
-        """if self.energy <= self.max_energy_threshold:
-            self.max_speed = 1
-        else:
-            self.max_speed = 5"""
+        up, down, left, right = directions
+
+        dx = right - left   # derecha suma, izquierda resta
+        dy = down - up      # abajo suma, arriba resta
         
         # Crea el vector base a partir de dx y dy
         base_direction = pygame.Vector2(dx, dy)
-        # ultiplica el vector base por el parametro speed para ajustar la velocidad
-        new_direction = base_direction * speed
+        if base_direction.length_squared() > 0:
+            base_direction = base_direction.normalize()
+            new_direction = base_direction * min(speed, self.max_speed)
+        else:
+            new_direction = pygame.Vector2(0, 0)
+        
         magnitude = new_direction.length() # Obtiene la magnitud del movimiento
-        
-        # Si la magnitud resultante supera la velocidad maxima, se escala el vector.
-        if magnitude > self.max_speed:
-            new_direction.scale_to_length(self.max_speed)
-            magnitude = self.max_speed # Fija la magnitud a la velocidad maxima permitida
-        
-        if not self.health <= 0.0:
-            # Actualiza la posicion
-            self.pos += new_direction
+
+        if not self.health <= 0.0: # Si no esta muerto
+            self.pos += new_direction # Actualiza su posicion
         
         # Control de bordes
         self.pos.x = max(0, min(self.pos.x, WINDOWS_WIDTH))
         self.pos.y = max(0, min(self.pos.y, WINDOWS_HEIGHT))
-        
-        # Guarda la magnitud (VELOCIDAD) del movimiento realizado
-        self.last_speed = magnitude
-        
+
+        self.last_speed = magnitude # Guarda la magnitud del movimiento
         # Se guarda y actualiza el vector de direccion anterior
         old_direction = self.prev_direction
         self.prev_direction = new_direction
-        
+
         return old_direction, new_direction, magnitude
     
     def dead(self) -> None:
@@ -304,7 +284,6 @@ class Cyra:
     # -----------------------------
     # FUNCIONES PARA LAS COLISIONES
     # -----------------------------
-    # Detectar objetos
     def detect_collision_objects(self, obj) -> bool:
         """
         Detecta si un objeto colisiona con el área de detección del Cyra.
