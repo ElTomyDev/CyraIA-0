@@ -1,9 +1,9 @@
 import pygame
 from config.general_config import WINDOWS_WIDTH, WINDOWS_HEIGHT, FPS
-from .training import Train
+from trainer.training import Train
 
 class TrainerView:
-    def __init__(self):
+    def __init__(self) -> None:
         
         # Inicializacion de Pygame y la ventana
         pygame.init()
@@ -11,8 +11,7 @@ class TrainerView:
         self.screen = pygame.display.set_mode((WINDOWS_WIDTH, WINDOWS_HEIGHT))
         
         # Variable que determina si puede o no pasar a la siguiente generacion
-        self.can_next_gen = False
-        self.generation = 0
+        self.train_running = False
         
         # Inicializacion del training
         self.train = Train(self)
@@ -21,13 +20,13 @@ class TrainerView:
         self.clock = pygame.time.Clock()
         self.running = True
     
-    def run(self):
+    def run(self) -> None:
         """Bucle principal del juego. Procesa eventos y ejecuta generaciones de entrenamiento."""
         while self.running:
             self.process_events()
             
             # Si la generacion anterior termino, se inicia la siguiente
-            if self.can_next_gen == True:
+            if self.train_running == True:
                 self.run_next_generation()
             
             pygame.display.flip()
@@ -35,7 +34,7 @@ class TrainerView:
         
         pygame.quit()
     
-    def run_next_generation(self):
+    def run_next_generation(self) -> None:
         """
         Ejecuta una nueva generación:
             - Incrementa el contador de generación.
@@ -43,23 +42,17 @@ class TrainerView:
             - Guarda el mejor modelo si se mejora la recompensa promedio.
             - Guarda el número de generación.
         """
-        self.generation += 1
-        
         # Ejecuta entrenamiento y obtiene la recompensa promedio del mismo
-        train_rewards = self.train.run_generation_multi_agent()
-        generation_avg = sum(train_rewards) / len(train_rewards)
-        
-        print(f"Generación {self.generation} - Recompensa promedio: {generation_avg:.2f}")
-        
-        self.train.save_best_model(avg_rewards=train_rewards)
+        train_rewards = self.train.run_generation()
+        self.train.evolve_population(avg_rewards=train_rewards)
     
-    def process_events(self):
+    def process_events(self) -> None:
         """Procesa eventos de Pygame (cierre de ventana y tecla G para entrenamiento, etc)."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
-                    self.can_next_gen = True
+                    self.train_running = True
                 if event.key == pygame.K_s:
-                    self.can_next_gen = False
+                    self.train_running = False
