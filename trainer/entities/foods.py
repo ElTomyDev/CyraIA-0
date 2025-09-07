@@ -4,7 +4,7 @@ from enums.object_types import ObjectTypes
 from config.general_config import WINDOWS_WIDTH, WINDOWS_HEIGHT, FIRST_FOOD_COLOR, TWO_FOOD_COLOR
 
 class Food:
-    def __init__(self):
+    def __init__(self) -> None:
         # --- Configuracion de la comida
         self.obj_type = ObjectTypes.FOOD
         self.nutrition = 0.0
@@ -17,13 +17,13 @@ class Food:
         
         
     
-    def reset(self):
+    def reset(self) -> None:
         """Reposiciona la comida y asigna un valor nutricional aleatorio."""
         self.pos = pygame.Vector2(random.randint(0, WINDOWS_WIDTH), random.randint(0, WINDOWS_HEIGHT))
-        self.nutrition = random.uniform(0.0, 100.0)
+        self.nutrition = random.uniform(0.0, 1.0)
         self.random = random.randint(0,1)
     
-    def draw(self, screen):
+    def draw(self, screen) -> None:
         """
         Dibuja la comida en pantalla como un cuadrado verde.
         """
